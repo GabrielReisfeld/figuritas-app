@@ -4,10 +4,19 @@ import { useAlbums } from '../hooks/useAlbums'
 import { useStickers } from '../hooks/useStickers'
 import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
-import { CategoryBadge } from '../components/ui/Badge'
 import type { StickerCategory, StickerWithOwned } from '../types'
 
-const CATEGORIES: StickerCategory[] = ['team', 'player', 'badge', 'stadium', 'special', 'gold', 'other']
+const CATEGORY_LABEL: Record<StickerCategory, string> = {
+  special: 'Especiales',
+  stadium: 'Estadios',
+  gold:    'Doradas',
+  badge:   'Escudos',
+  team:    'Foto equipo',
+  player:  'Jugadores',
+  other:   'Otros',
+}
+
+const CATEGORIES: StickerCategory[] = ['player', 'badge', 'team', 'stadium', 'special', 'gold', 'other']
 
 export const MissingView: React.FC = () => {
   const { albums } = useAlbums()
@@ -17,7 +26,6 @@ export const MissingView: React.FC = () => {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<StickerCategory | ''>('')
   const [teamFilter, setTeamFilter] = useState<string>('')
-  const [sortBy, setSortBy] = useState<'number' | 'team'>('number')
 
   const album = albums.find(a => a.id === selectedAlbumId)
   const { stickers } = useStickers(selectedAlbumId || undefined, album?.total_stickers)
@@ -29,9 +37,7 @@ export const MissingView: React.FC = () => {
   }, [albums, selectedAlbumId])
 
   useEffect(() => {
-    if (user && selectedAlbumId) {
-      loadOwnedForAlbum(user.id, selectedAlbumId)
-    }
+    if (user && selectedAlbumId) loadOwnedForAlbum(user.id, selectedAlbumId)
   }, [user, selectedAlbumId, loadOwnedForAlbum])
 
   const enriched = useMemo(
@@ -43,76 +49,47 @@ export const MissingView: React.FC = () => {
     let result = enriched.filter(s => !s.owned)
     if (categoryFilter) result = result.filter(s => s.category === categoryFilter)
     if (teamFilter) result = result.filter(s => s.team === teamFilter)
-    if (sortBy === 'team') result = [...result].sort((a, b) => (a.team ?? '').localeCompare(b.team ?? ''))
-    else result = [...result].sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
     return result
-  }, [enriched, categoryFilter, teamFilter, sortBy])
+  }, [enriched, categoryFilter, teamFilter])
 
   const teams = useMemo(() => {
     const set = new Set<string>()
-    for (const s of enriched) {
-      if (s.team) set.add(s.team)
-    }
-    return Array.from(set).sort()
+    for (const s of enriched) if (s.team) set.add(s.team)
+    return Array.from(set)
   }, [enriched])
 
   if (!user) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>
-        <p style={{ marginBottom: 12 }}>Sign in to see your missing stickers</p>
-        <Link to="/auth" style={{ color: '#4ade80', fontWeight: 700 }}>Sign in</Link>
+        <p style={{ marginBottom: 12 }}>Iniciá sesión para ver tus figuritas faltantes</p>
+        <Link to="/auth" style={{ color: '#4ade80', fontWeight: 700 }}>Entrar</Link>
       </div>
     )
   }
 
   return (
     <div style={{ padding: 16 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Missing Stickers</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Faltantes</h1>
 
-      {/* Filters */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
         <select value={selectedAlbumId} onChange={e => setSelectedAlbumId(e.target.value)} style={selectStyle}>
-          {albums.map(a => (
-            <option key={a.id} value={a.id}>{a.year} – {a.name}</option>
-          ))}
+          {albums.map(a => <option key={a.id} value={a.id}>{a.year} – {a.name}</option>)}
         </select>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value as StickerCategory | '')} style={{ ...selectStyle, flex: 1 }}>
-            <option value="">All categories</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value="">Todas las categorías</option>
+            {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
           </select>
-
           <select value={teamFilter} onChange={e => setTeamFilter(e.target.value)} style={{ ...selectStyle, flex: 1 }}>
-            <option value="">All teams</option>
+            <option value="">Todos los equipos</option>
             {teams.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-        </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          {(['number', 'team'] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setSortBy(s)}
-              style={{
-                background: sortBy === s ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.04)',
-                border: sortBy === s ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 6,
-                color: sortBy === s ? '#4ade80' : '#94a3b8',
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 600,
-                padding: '6px 14px',
-              }}
-            >
-              Sort by {s}
-            </button>
-          ))}
         </div>
       </div>
 
       <p style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>
-        {missing.length} missing sticker{missing.length !== 1 ? 's' : ''}
+        {missing.length} figurita{missing.length !== 1 ? 's' : ''} faltante{missing.length !== 1 ? 's' : ''}
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -129,17 +106,17 @@ export const MissingView: React.FC = () => {
               gap: 12,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', minWidth: 36 }}>#{s.number}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', minWidth: 40 }}>{s.number}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9' }}>{s.label}</div>
               {s.team && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{s.team}</div>}
             </div>
-            <CategoryBadge category={s.category} />
+            <span style={{ fontSize: 11, color: '#64748b' }}>{CATEGORY_LABEL[s.category]}</span>
           </div>
         ))}
         {missing.length === 0 && (
           <div style={{ textAlign: 'center', color: '#4ade80', padding: 32, fontSize: 14, fontWeight: 700 }}>
-            Complete! All stickers owned.
+            ¡Álbum completo! 🎉
           </div>
         )}
       </div>

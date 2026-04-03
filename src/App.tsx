@@ -4,6 +4,7 @@ import { AppShell } from './components/layout/AppShell'
 import { AlbumListView } from './views/AlbumListView'
 import { AlbumDetailView } from './views/AlbumDetailView'
 import { MissingView } from './views/MissingView'
+import { DuplicatesView } from './views/DuplicatesView'
 import { ShareView, SharedAlbumView } from './views/ShareView'
 import { AuthView } from './views/AuthView'
 import { useAuthStore } from './store/authStore'
@@ -18,7 +19,6 @@ export default function App() {
     init()
   }, [init])
 
-  // Sync pending offline changes when coming back online
   useEffect(() => {
     if (!user) return
     async function doSync() {
@@ -35,16 +35,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Shared public view */}
         <Route path="/shared/:albumId" element={<AppShell><SharedAlbumView /></AppShell>} />
-
-        {/* Main app */}
         <Route path="/*" element={
           <AppShell>
             <Routes>
               <Route index element={<AlbumListView />} />
               <Route path="album/:albumId" element={<AlbumDetailView />} />
               <Route path="missing" element={<MissingView />} />
+              <Route path="repetidas" element={<DuplicatesView />} />
               <Route path="share" element={<ShareView />} />
               <Route path="auth" element={<AuthView />} />
             </Routes>

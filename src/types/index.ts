@@ -43,10 +43,12 @@ export interface AlbumWithStats extends Album {
   owned: number
   missing: number
   pct: number
+  totalDuplicates: number
 }
 
 export interface StickerWithOwned extends Sticker {
   owned: boolean
+  duplicateCount: number   // extra copies (0 = no duplicates)
 }
 
 export interface CategoryBreakdown {
@@ -67,7 +69,7 @@ export interface TeamBreakdown {
 export type SyncAction = 'add' | 'remove'
 
 export interface PendingChange {
-  id: string                // local uuid
+  id: string
   sticker_id: string
   album_id: string
   user_id: string
@@ -79,5 +81,5 @@ export interface PendingChange {
 
 export interface SharedView {
   album_id: string
-  owned_ids: string[]       // sticker ids
+  owned_ids: string[]
 }

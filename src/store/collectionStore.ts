@@ -1,7 +1,3 @@
-/**
- * Central store for sticker collection state.
- * Handles optimistic UI updates, IndexedDB caching, and offline queuing.
- */
 import { create } from 'zustand'
 import { v4 as uuidv4 } from 'uuid'
 import { supabase } from '../lib/supabase'
@@ -10,18 +6,23 @@ import {
   setCachedOwned,
   removeCachedOwned,
   setCachedOwnedBulk,
+  clearCachedOwnedAll,
   enqueuePendingChange,
+  getDuplicateCounts,
+  setCachedDuplicateCount,
 } from '../lib/idb'
 import type { Album, Sticker, AlbumWithStats, StickerWithOwned } from '../types'
 
 interface CollectionState {
-  // owned sticker ids per album: albumId → Set<stickerId>
   ownedByAlbum: Record<string, Set<string>>
-  // collection id per album: albumId → collectionId
   collectionIds: Record<string, string>
+  duplicatesByAlbum: Record<string, Map<string, number>>
 
   loadOwnedForAlbum: (userId: string, albumId: string) => Promise<void>
   toggleSticker: (userId: string, albumId: string, sticker: Sticker) => Promise<void>
+  markAllOwned: (userId: string, albumId: string, stickers: Sticker[]) => Promise<void>
+  clearAllOwned: (userId: string, albumId: string) => Promise<void>
+  setDuplicateCount: (userId: string, albumId: string, sticker: Sticker, count: number) => Promise<void>
   enrichAlbums: (albums: Album[], userId: string | null) => AlbumWithStats[]
   enrichStickers: (stickers: Sticker[], albumId: string) => StickerWithOwned[]
 }
@@ -29,15 +30,20 @@ interface CollectionState {
 export const useCollectionStore = create<CollectionState>((set, get) => ({
   ownedByAlbum: {},
   collectionIds: {},
+  duplicatesByAlbum: {},
 
   loadOwnedForAlbum: async (userId, albumId) => {
-    // 1. Try IndexedDB first (instant)
-    const cached = await getCachedOwnedIds(userId, albumId)
+    // 1. Load from IndexedDB (instant)
+    const [cached, cachedDups] = await Promise.all([
+      getCachedOwnedIds(userId, albumId),
+      getDuplicateCounts(userId, albumId),
+    ])
     set(s => ({
       ownedByAlbum: { ...s.ownedByAlbum, [albumId]: cached },
+      duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: cachedDups },
     }))
 
-    // 2. Ensure collection row exists
+    // 2. Ensure collection row exists in Supabase
     const { data: colData } = await supabase
       .from('user_collections')
       .select('id')
@@ -59,7 +65,7 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
 
     set(s => ({ collectionIds: { ...s.collectionIds, [albumId]: collectionId } }))
 
-    // 3. Fetch live owned sticker ids from Supabase
+    // 3. Fetch live owned sticker ids
     const { data: us } = await supabase
       .from('user_stickers')
       .select('sticker_id')
@@ -81,11 +87,21 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
 
     // Optimistic update
     const next = new Set(owned)
-    if (isOwned) next.delete(sticker.id)
-    else next.add(sticker.id)
-    set(s => ({ ownedByAlbum: { ...s.ownedByAlbum, [albumId]: next } }))
+    if (isOwned) {
+      next.delete(sticker.id)
+      // Remove duplicates when un-owning
+      const nextDups = new Map(state.duplicatesByAlbum[albumId] ?? [])
+      nextDups.delete(sticker.id)
+      set(s => ({
+        ownedByAlbum: { ...s.ownedByAlbum, [albumId]: next },
+        duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: nextDups },
+      }))
+      await setCachedDuplicateCount(userId, albumId, sticker.id, 0)
+    } else {
+      next.add(sticker.id)
+      set(s => ({ ownedByAlbum: { ...s.ownedByAlbum, [albumId]: next } }))
+    }
 
-    // Update IndexedDB
     if (isOwned) {
       await removeCachedOwned(userId, albumId, sticker.id)
     } else {
@@ -93,7 +109,6 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     }
 
     if (!navigator.onLine || !collectionId) {
-      // Queue for later sync
       await enqueuePendingChange({
         id: uuidv4(),
         sticker_id: sticker.id,
@@ -105,7 +120,6 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
       return
     }
 
-    // Live sync
     if (isOwned) {
       await supabase
         .from('user_stickers')
@@ -119,19 +133,77 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     }
   },
 
+  markAllOwned: async (userId, albumId, stickers) => {
+    const state = get()
+    const collectionId = state.collectionIds[albumId]
+    const allIds = stickers.map(s => s.id)
+    const newSet = new Set(allIds)
+
+    set(s => ({ ownedByAlbum: { ...s.ownedByAlbum, [albumId]: newSet } }))
+    await setCachedOwnedBulk(userId, albumId, allIds)
+
+    if (!navigator.onLine || !collectionId) return
+
+    await supabase
+      .from('user_stickers')
+      .upsert(allIds.map(id => ({ user_collection_id: collectionId, sticker_id: id })))
+  },
+
+  clearAllOwned: async (userId, albumId) => {
+    const state = get()
+    const collectionId = state.collectionIds[albumId]
+
+    set(s => ({
+      ownedByAlbum: { ...s.ownedByAlbum, [albumId]: new Set() },
+      duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: new Map() },
+    }))
+    await clearCachedOwnedAll(userId, albumId)
+
+    if (!navigator.onLine || !collectionId) return
+
+    await supabase
+      .from('user_stickers')
+      .delete()
+      .eq('user_collection_id', collectionId)
+  },
+
+  setDuplicateCount: async (userId, albumId, sticker, count) => {
+    const state = get()
+    const owned = state.ownedByAlbum[albumId] ?? new Set<string>()
+    if (!owned.has(sticker.id)) return  // can't have duplicates of unowned sticker
+
+    const nextDups = new Map(state.duplicatesByAlbum[albumId] ?? [])
+    if (count <= 0) {
+      nextDups.delete(sticker.id)
+    } else {
+      nextDups.set(sticker.id, count)
+    }
+    set(s => ({ duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: nextDups } }))
+    await setCachedDuplicateCount(userId, albumId, sticker.id, count)
+  },
+
   enrichAlbums: (albums, userId) => {
     const state = get()
     return albums.map(album => {
       const owned = userId ? (state.ownedByAlbum[album.id]?.size ?? 0) : 0
       const missing = album.total_stickers - owned
       const pct = album.total_stickers > 0 ? Math.round((owned / album.total_stickers) * 100) : 0
-      return { ...album, owned, missing, pct }
+      const dups = state.duplicatesByAlbum[album.id]
+      const totalDuplicates = dups
+        ? Array.from(dups.values()).reduce((sum, c) => sum + c, 0)
+        : 0
+      return { ...album, owned, missing, pct, totalDuplicates }
     })
   },
 
   enrichStickers: (stickers, albumId) => {
     const state = get()
     const owned = state.ownedByAlbum[albumId] ?? new Set<string>()
-    return stickers.map(s => ({ ...s, owned: owned.has(s.id) }))
+    const dups = state.duplicatesByAlbum[albumId] ?? new Map<string, number>()
+    return stickers.map(s => ({
+      ...s,
+      owned: owned.has(s.id),
+      duplicateCount: dups.get(s.id) ?? 0,
+    }))
   },
 }))

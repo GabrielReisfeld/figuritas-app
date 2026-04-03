@@ -19,14 +19,23 @@ interface FiguritasDB extends DBSchema {
       album_id: string
       sticker_id: string
     }
-    indexes: {
-      'by-user-album': [string, string]
-    }
+    indexes: { 'by-user-album': [string, string] }
   }
   pending_changes: {
-    key: string          // PendingChange.id
+    key: string
     value: PendingChange
     indexes: { 'by-timestamp': number }
+  }
+  duplicate_counts: {
+    key: string          // `${user_id}:${album_id}:${sticker_id}`
+    value: {
+      key: string
+      user_id: string
+      album_id: string
+      sticker_id: string
+      count: number
+    }
+    indexes: { 'by-user-album': [string, string] }
   }
 }
 
@@ -34,7 +43,7 @@ let _db: IDBPDatabase<FiguritasDB> | null = null
 
 export async function getDB(): Promise<IDBPDatabase<FiguritasDB>> {
   if (_db) return _db
-  _db = await openDB<FiguritasDB>('figuritas', 2, {
+  _db = await openDB<FiguritasDB>('figuritas', 3, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
         db.createObjectStore('albums', { keyPath: 'id' })
@@ -47,6 +56,10 @@ export async function getDB(): Promise<IDBPDatabase<FiguritasDB>> {
 
         const changesStore = db.createObjectStore('pending_changes', { keyPath: 'id' })
         changesStore.createIndex('by-timestamp', 'timestamp')
+      }
+      if (oldVersion < 3) {
+        const dupStore = db.createObjectStore('duplicate_counts', { keyPath: 'key' })
+        dupStore.createIndex('by-user-album', ['user_id', 'album_id'])
       }
     },
   })
@@ -122,6 +135,45 @@ export async function setCachedOwnedBulk(userId: string, albumId: string, sticke
     )
   )
   await tx.done
+}
+
+export async function clearCachedOwnedAll(userId: string, albumId: string) {
+  const db = await getDB()
+  const entries = await db.getAllFromIndex('owned_sticker_ids', 'by-user-album', [userId, albumId])
+  const tx = db.transaction('owned_sticker_ids', 'readwrite')
+  await Promise.all(entries.map(e => tx.store.delete(e.key)))
+  await tx.done
+}
+
+// ─── Duplicate counts ─────────────────────────────────────────────────────────
+
+function dupKey(userId: string, albumId: string, stickerId: string) {
+  return `${userId}:${albumId}:${stickerId}`
+}
+
+export async function getDuplicateCounts(userId: string, albumId: string): Promise<Map<string, number>> {
+  const db = await getDB()
+  const entries = await db.getAllFromIndex('duplicate_counts', 'by-user-album', [userId, albumId])
+  const map = new Map<string, number>()
+  for (const e of entries) {
+    if (e.count > 0) map.set(e.sticker_id, e.count)
+  }
+  return map
+}
+
+export async function setCachedDuplicateCount(userId: string, albumId: string, stickerId: string, count: number) {
+  const db = await getDB()
+  if (count <= 0) {
+    await db.delete('duplicate_counts', dupKey(userId, albumId, stickerId))
+  } else {
+    await db.put('duplicate_counts', {
+      key: dupKey(userId, albumId, stickerId),
+      user_id: userId,
+      album_id: albumId,
+      sticker_id: stickerId,
+      count,
+    })
+  }
 }
 
 // ─── Pending changes ──────────────────────────────────────────────────────────

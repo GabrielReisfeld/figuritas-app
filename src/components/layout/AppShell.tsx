@@ -47,7 +47,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               fontWeight: 600,
             }}
           >
-            Offline
+            Sin conexión
           </span>
         )}
 
@@ -64,7 +64,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               padding: '4px 12px',
             }}
           >
-            Sign out
+            Salir
           </button>
         ) : (
           <Link
@@ -81,7 +81,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               textDecoration: 'none',
             }}
           >
-            Sign in
+            Entrar
           </Link>
         )}
       </header>
@@ -102,7 +102,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         }}
       >
         {NAV_ITEMS.map(item => {
-          const active = location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+          const active = location.pathname === item.path ||
+            (item.path !== '/' && location.pathname.startsWith(item.path + '/')) ||
+            (item.path !== '/' && location.pathname === item.path)
           return (
             <Link
               key={item.path}
@@ -137,7 +139,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 }
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Albums', icon: '📚' },
-  { path: '/missing', label: 'Missing', icon: '🔍' },
-  { path: '/share', label: 'Share', icon: '🔗' },
+  { path: '/',          label: 'Álbumes',   icon: '📚' },
+  { path: '/missing',   label: 'Faltantes', icon: '🔍' },
+  { path: '/repetidas', label: 'Repetidas', icon: '🔄' },
+  { path: '/share',     label: 'Compartir', icon: '🔗' },
 ]

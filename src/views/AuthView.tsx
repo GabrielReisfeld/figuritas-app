@@ -38,12 +38,12 @@ export const AuthView: React.FC = () => {
         }}
       >
         <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8 }}>
-          {mode === 'signin' ? 'Welcome back' : 'Create account'}
+          {mode === 'signin' ? 'Bienvenido' : 'Crear cuenta'}
         </h1>
         <p style={{ color: '#64748b', fontSize: 14, marginBottom: 28 }}>
           {mode === 'signin'
-            ? 'Sign in to access your collection'
-            : 'Start tracking your sticker albums'}
+            ? 'Iniciá sesión para acceder a tu colección'
+            : 'Empezá a registrar tus álbumes de figuritas'}
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -57,7 +57,7 @@ export const AuthView: React.FC = () => {
           />
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Contraseña"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
@@ -65,9 +65,7 @@ export const AuthView: React.FC = () => {
             style={inputStyle}
           />
 
-          {error && (
-            <p style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{error}</p>
-          )}
+          {error && <p style={{ color: '#f87171', fontSize: 13, margin: 0 }}>{error}</p>}
 
           <button
             type="submit"
@@ -84,17 +82,17 @@ export const AuthView: React.FC = () => {
               padding: '12px 0',
             }}
           >
-            {loading ? '...' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            {loading ? '...' : mode === 'signin' ? 'Entrar' : 'Crear cuenta'}
           </button>
         </form>
 
         <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#64748b' }}>
-          {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+          {mode === 'signin' ? '¿No tenés cuenta? ' : '¿Ya tenés cuenta? '}
           <button
             onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
             style={{ background: 'none', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: 0 }}
           >
-            {mode === 'signin' ? 'Sign up' : 'Sign in'}
+            {mode === 'signin' ? 'Registrate' : 'Entrá'}
           </button>
         </p>
       </div>
