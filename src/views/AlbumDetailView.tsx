@@ -6,8 +6,7 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { StickerChip } from '../components/ui/StickerChip'
-import { CategoryBadge } from '../components/ui/Badge'
-import type { StickerWithOwned, StickerCategory, TeamBreakdown, CategoryBreakdown } from '../types'
+import type { StickerWithOwned, StickerCategory, TeamBreakdown } from '../types'
 
 const SPECIAL_CATEGORIES: StickerCategory[] = ['special', 'stadium', 'gold', 'badge', 'team', 'other']
 
@@ -59,20 +58,6 @@ export const AlbumDetailView: React.FC = () => {
       owned: ss.filter(s => s.owned).length,
       total: ss.length,
     }))
-  }, [enriched])
-
-  // Non-team sticker sections
-  const categoryBreakdowns: CategoryBreakdown[] = useMemo(() => {
-    const map = new Map<StickerCategory, { total: number; owned: number }>()
-    for (const s of enriched) {
-      if (!s.team) {
-        const entry = map.get(s.category) ?? { total: 0, owned: 0 }
-        entry.total++
-        if (s.owned) entry.owned++
-        map.set(s.category, entry)
-      }
-    }
-    return Array.from(map.entries()).map(([category, stats]) => ({ category, ...stats }))
   }, [enriched])
 
   const handleToggle = useCallback(
