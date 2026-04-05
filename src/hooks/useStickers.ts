@@ -54,6 +54,7 @@ export function useStickers(albumId: string | undefined, totalStickers = 0) {
         .from('stickers')
         .select('*')
         .eq('album_id', albumId)
+        .order('sort_order', { ascending: true })
 
       if (cancelled) return
       if (err) {
