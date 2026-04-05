@@ -23,6 +23,7 @@ export interface Sticker {
   label: string
   team: string | null
   category: StickerCategory
+  sort_order: number | null
 }
 
 export interface UserCollection {
