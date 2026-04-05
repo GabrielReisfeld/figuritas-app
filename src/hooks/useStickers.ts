@@ -19,6 +19,7 @@ function fillPlaceholders(stickers: Sticker[], albumId: string, total: number): 
         label: `#${num}`,
         team: null,
         category: 'other' as StickerCategory,
+        sort_order: null,
       })
     }
     n++
