@@ -33,10 +33,10 @@ export const AlbumDetailView: React.FC = () => {
     if (user && albumId) loadOwnedForAlbum(user.id, albumId)
   }, [user, albumId, loadOwnedForAlbum])
 
-  const enriched: StickerWithOwned[] = useMemo(
-    () => enrichStickers(stickers, albumId ?? ''),
-    [stickers, albumId, enrichStickers, ownedByAlbum]  // eslint-disable-line
-  )
+  const enriched: StickerWithOwned[] = useMemo(() => {
+    console.log('stickers:', stickers.slice(0, 5).map(s => ({ number: s.number, sort_order: (s as any).sort_order })))
+    return enrichStickers(stickers, albumId ?? '')
+  }, [stickers, albumId, enrichStickers, ownedByAlbum]) // eslint-disable-line
 
   const owned = ownedByAlbum[albumId ?? '']?.size ?? 0
   const total = album?.total_stickers ?? 0
