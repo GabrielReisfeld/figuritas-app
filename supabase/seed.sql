@@ -15,12 +15,16 @@ insert into albums (id, year, name, total_stickers) values
 on conflict (year) do nothing;
 
 -- Remove any previously seeded invented sticker data
+delete from stickers where album_id = 'a2002000-0000-0000-0000-000000000000';
 delete from stickers where album_id = 'a2006000-0000-0000-0000-000000000000';
+delete from stickers where album_id = 'a2010000-0000-0000-0000-000000000000';
+delete from stickers where album_id = 'a2014000-0000-0000-0000-000000000000';
+delete from stickers where album_id = 'a2018000-0000-0000-0000-000000000000';
+delete from stickers where album_id = 'a2022000-0000-0000-0000-000000000000';
 
 -- ═════════════════════════════════════════════════════════════════════════════
 -- 2002 KOREA/JAPAN (576 stickers, numbers 1–576)
 -- ═════════════════════════════════════════════════════════════════════════════
-delete from stickers where album_id = 'a2002000-0000-0000-0000-000000000000';
 
 insert into stickers (album_id, number, label, team, category) values
 -- Special / Introduction
@@ -638,7 +642,6 @@ on conflict (album_id, number) do nothing;
 -- ═════════════════════════════════════════════════════════════════════════════
 -- 2006 GERMANY (597 stickers, numbers 0–597)
 -- ═════════════════════════════════════════════════════════════════════════════
-delete from stickers where album_id = 'a2006000-0000-0000-0000-000000000000';
 
 insert into stickers (album_id, number, label, team, category) values
 -- Special / Introduction
@@ -1277,7 +1280,6 @@ on conflict (album_id, number) do nothing;
 -- ═════════════════════════════════════════════════════════════════════════════
 -- 2010 SOUTH AFRICA (640 stickers, numbers 00–640)
 -- ═════════════════════════════════════════════════════════════════════════════
-delete from stickers where album_id = 'a2010000-0000-0000-0000-000000000000';
 
 insert into stickers (album_id, number, label, team, category) values
 -- Special / Introduction
