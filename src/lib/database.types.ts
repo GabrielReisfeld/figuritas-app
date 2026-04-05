@@ -37,6 +37,7 @@ export interface Database {
           label: string
           team: string | null
           category: string
+          sort_order: number | null
         }
         Insert: {
           id?: string
@@ -45,6 +46,7 @@ export interface Database {
           label: string
           team?: string | null
           category: string
+          sort_order: number | null
         }
         Update: {
           id?: string
@@ -53,6 +55,7 @@ export interface Database {
           label?: string
           team?: string | null
           category?: string
+          sort_order: number | null
         }
       }
       user_collections: {

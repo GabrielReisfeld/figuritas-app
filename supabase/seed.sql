@@ -3378,7 +3378,6 @@ insert into stickers (album_id, number, label, team, category) values
 ('a2022000-0000-0000-0000-000000000000','FWC5','Official Mascot FOIL 2',null,'special'),
 ('a2022000-0000-0000-0000-000000000000','FWC6','Official Emblem FOIL 1',null,'special'),
 ('a2022000-0000-0000-0000-000000000000','FWC7','Official Emblem FOIL 2',null,'special'),
-('a2022000-0000-0000-0000-000000000000','FWC18','Official Match Ball',null,'special'),
 -- Stadiums
 ('a2022000-0000-0000-0000-000000000000','FWC8','Ahmad Bin Ali Stadium',null,'stadium'),
 ('a2022000-0000-0000-0000-000000000000','FWC9','Al Janoub Stadium',null,'stadium'),
@@ -3390,6 +3389,7 @@ insert into stickers (album_id, number, label, team, category) values
 ('a2022000-0000-0000-0000-000000000000','FWC15','Al Bayt Stadium indoor',null,'stadium'),
 ('a2022000-0000-0000-0000-000000000000','FWC16','Lusail Stadium outdoor',null,'stadium'),
 ('a2022000-0000-0000-0000-000000000000','FWC17','Lusail Stadium indoor',null,'stadium'),
+('a2022000-0000-0000-0000-000000000000','FWC18','Official Match Ball',null,'special'),
 -- Qatar
 ('a2022000-0000-0000-0000-000000000000','QAT1','Team Photo - Qatar','Qatar','team'),
 ('a2022000-0000-0000-0000-000000000000','QAT2','Team Logo FOIL - Qatar','Qatar','badge'),
