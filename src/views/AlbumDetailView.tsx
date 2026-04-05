@@ -35,6 +35,7 @@ export const AlbumDetailView: React.FC = () => {
 
   const enriched: StickerWithOwned[] = useMemo(() => {
     const raw = enrichStickers(stickers, albumId ?? '')
+    console.log('primeros 5 numbers:', raw.slice(0, 5).map(s => s.number))
     
     return raw.sort((a, b) => {
       const parse = (n: string) => {
