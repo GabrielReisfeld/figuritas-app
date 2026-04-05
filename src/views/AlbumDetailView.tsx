@@ -35,13 +35,14 @@ export const AlbumDetailView: React.FC = () => {
 
   const enriched: StickerWithOwned[] = useMemo(
     () => enrichStickers(stickers, albumId ?? ''),
-    [stickers, albumId, enrichStickers, ownedByAlbum] // eslint-disable-line
+    [stickers, albumId, enrichStickers, ownedByAlbum]  // eslint-disable-line
   )
 
   const owned = ownedByAlbum[albumId ?? '']?.size ?? 0
   const total = album?.total_stickers ?? 0
   const pct = total > 0 ? Math.round((owned / total) * 100) : 0
 
+  // Team sections — use Map insertion order (preserves album order for numbered albums)
   const teamBreakdowns: TeamBreakdown[] = useMemo(() => {
     const map = new Map<string, StickerWithOwned[]>()
     for (const s of enriched) {
@@ -252,3 +253,4 @@ function bulkBtn(color: string): React.CSSProperties {
     whiteSpace: 'nowrap',
   }
 }
+
