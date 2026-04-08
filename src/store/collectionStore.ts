@@ -65,17 +65,30 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
 
     set(s => ({ collectionIds: { ...s.collectionIds, [albumId]: collectionId } }))
 
-    // 3. Fetch live owned sticker ids
+    // 3. Fetch live owned sticker ids + duplicate counts
     const { data: us } = await supabase
       .from('user_stickers')
-      .select('sticker_id')
+      .select('sticker_id, duplicate_count')
       .eq('user_collection_id', collectionId)
 
     if (us) {
       const ids = us.map(r => r.sticker_id)
       const liveSet = new Set(ids)
+      const liveDups = new Map<string, number>()
+      for (const row of us) {
+        if ((row.duplicate_count ?? 0) > 0) {
+          liveDups.set(row.sticker_id, row.duplicate_count)
+        }
+      }
       await setCachedOwnedBulk(userId, albumId, ids)
-      set(s => ({ ownedByAlbum: { ...s.ownedByAlbum, [albumId]: liveSet } }))
+      // sync dups to IndexedDB
+      for (const [sid, count] of liveDups) {
+        await setCachedDuplicateCount(userId, albumId, sid, count)
+      }
+      set(s => ({
+        ownedByAlbum: { ...s.ownedByAlbum, [albumId]: liveSet },
+        duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: liveDups },
+      }))
     }
   },
 
@@ -170,7 +183,7 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   setDuplicateCount: async (userId, albumId, sticker, count) => {
     const state = get()
     const owned = state.ownedByAlbum[albumId] ?? new Set<string>()
-    if (!owned.has(sticker.id)) return  // can't have duplicates of unowned sticker
+    if (!owned.has(sticker.id)) return
 
     const nextDups = new Map(state.duplicatesByAlbum[albumId] ?? [])
     if (count <= 0) {
@@ -178,8 +191,19 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     } else {
       nextDups.set(sticker.id, count)
     }
+    // Optimistic local update
     set(s => ({ duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: nextDups } }))
     await setCachedDuplicateCount(userId, albumId, sticker.id, count)
+
+    // Sync to Supabase
+    const collectionId = state.collectionIds[albumId]
+    if (navigator.onLine && collectionId) {
+      await supabase
+        .from('user_stickers')
+        .update({ duplicate_count: count })
+        .eq('user_collection_id', collectionId)
+        .eq('sticker_id', sticker.id)
+    }
   },
 
   enrichAlbums: (albums, userId) => {

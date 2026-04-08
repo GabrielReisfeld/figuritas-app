@@ -3,12 +3,73 @@ import { supabase } from '../lib/supabase'
 import { cacheStickers, getCachedStickers } from '../lib/idb'
 import type { Sticker, StickerCategory } from '../types'
 
-/** Numeric-aware sort for sticker numbers like "10", "QAT10", "FWC2" */
-function compareStickerNumbers(a: string, b: string): number {
-  return a.localeCompare(b, undefined, { numeric: true })
+// ─── 2022 Qatar album section order ──────────────────────────────────────────
+// FWC appears twice: FWC1-18 (cover/stadiums) and FWC19-29 (FIFA museum)
+const SECTIONS_2022: Array<{ prefix: string; min: number; max: number }> = [
+  { prefix: '00',  min: 0,  max: 0  },  // sticker "00"
+  { prefix: 'FWC', min: 1,  max: 18 },
+  { prefix: 'QAT', min: 1,  max: 20 },
+  { prefix: 'ECU', min: 1,  max: 20 },
+  { prefix: 'SEN', min: 1,  max: 20 },
+  { prefix: 'NED', min: 1,  max: 20 },
+  { prefix: 'ENG', min: 1,  max: 20 },
+  { prefix: 'IRN', min: 1,  max: 20 },
+  { prefix: 'USA', min: 1,  max: 20 },
+  { prefix: 'WAL', min: 1,  max: 20 },
+  { prefix: 'ARG', min: 1,  max: 20 },
+  { prefix: 'KSA', min: 1,  max: 20 },
+  { prefix: 'MEX', min: 1,  max: 20 },
+  { prefix: 'POL', min: 1,  max: 20 },
+  { prefix: 'FRA', min: 1,  max: 20 },
+  { prefix: 'AUS', min: 1,  max: 20 },
+  { prefix: 'DEN', min: 1,  max: 20 },
+  { prefix: 'TUN', min: 1,  max: 20 },
+  { prefix: 'ESP', min: 1,  max: 20 },
+  { prefix: 'CRC', min: 1,  max: 20 },
+  { prefix: 'GER', min: 1,  max: 20 },
+  { prefix: 'JPN', min: 1,  max: 20 },
+  { prefix: 'BEL', min: 1,  max: 20 },
+  { prefix: 'CAN', min: 1,  max: 20 },
+  { prefix: 'MAR', min: 1,  max: 20 },
+  { prefix: 'CRO', min: 1,  max: 20 },
+  { prefix: 'BRA', min: 1,  max: 20 },
+  { prefix: 'SRB', min: 1,  max: 20 },
+  { prefix: 'SUI', min: 1,  max: 20 },
+  { prefix: 'CMR', min: 1,  max: 20 },
+  { prefix: 'POR', min: 1,  max: 20 },
+  { prefix: 'GHA', min: 1,  max: 20 },
+  { prefix: 'URU', min: 1,  max: 20 },
+  { prefix: 'KOR', min: 1,  max: 20 },
+  { prefix: 'FWC', min: 19, max: 29 }, // FIFA museum
+]
+
+function getSortIndex2022(number: string): number {
+  if (number === '00') return 0
+  const match = number.match(/^([A-Z]+)(\d+)$/)
+  if (!match) return 99999
+  const prefix = match[1]
+  const num = parseInt(match[2])
+  for (let i = 0; i < SECTIONS_2022.length; i++) {
+    const s = SECTIONS_2022[i]
+    if (s.prefix === prefix && num >= s.min && num <= s.max) {
+      return i * 100 + num
+    }
+  }
+  return 99999
 }
 
-/** Fills in placeholder stickers for any gap between defined and total */
+// ─── Generic sort ─────────────────────────────────────────────────────────────
+
+function sortStickers(stickers: Sticker[], albumId: string): Sticker[] {
+  const is2022 = albumId === 'a2022000-0000-0000-0000-000000000000'
+  return [...stickers].sort((a, b) => {
+    if (is2022) return getSortIndex2022(a.number) - getSortIndex2022(b.number)
+    return a.number.localeCompare(b.number, undefined, { numeric: true })
+  })
+}
+
+// ─── Placeholder fill ─────────────────────────────────────────────────────────
+
 function fillPlaceholders(stickers: Sticker[], albumId: string, total: number): Sticker[] {
   if (stickers.length >= total) return stickers
   const defined = new Set(stickers.map(s => s.number))
@@ -28,10 +89,10 @@ function fillPlaceholders(stickers: Sticker[], albumId: string, total: number): 
     }
     n++
   }
-  const all = [...stickers, ...placeholders]
-  all.sort((a, b) => compareStickerNumbers(a.number, b.number))
-  return all
+  return sortStickers([...stickers, ...placeholders], albumId)
 }
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useStickers(albumId: string | undefined, totalStickers = 0) {
   const [stickers, setStickers] = useState<Sticker[]>([])
@@ -45,8 +106,7 @@ export function useStickers(albumId: string | undefined, totalStickers = 0) {
     async function load() {
       const cached = await getCachedStickers(albumId as string)
       if (cached.length > 0 && !cancelled) {
-        const sorted = [...cached].sort((a, b) => compareStickerNumbers(a.number, b.number))
-        setStickers(fillPlaceholders(sorted, albumId as string, totalStickers))
+        setStickers(fillPlaceholders(sortStickers(cached, albumId as string), albumId as string, totalStickers))
         setLoading(false)
       }
 
@@ -63,8 +123,7 @@ export function useStickers(albumId: string | undefined, totalStickers = 0) {
       }
       if (data) {
         await cacheStickers(data)
-        const sorted = [...data].sort((a, b) => compareStickerNumbers(a.number, b.number))
-        setStickers(fillPlaceholders(sorted, albumId as string, totalStickers))
+        setStickers(fillPlaceholders(sortStickers(data, albumId as string), albumId as string, totalStickers))
       }
       setLoading(false)
     }
@@ -75,4 +134,3 @@ export function useStickers(albumId: string | undefined, totalStickers = 0) {
 
   return { stickers, loading, error }
 }
-
