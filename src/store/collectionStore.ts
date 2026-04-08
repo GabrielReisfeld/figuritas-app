@@ -18,6 +18,8 @@ interface CollectionState {
   collectionIds: Record<string, string>
   duplicatesByAlbum: Record<string, Map<string, number>>
 
+  pushLocalDuplicatesToServer: (userId: string, albumId: string) => Promise<number>
+
   loadOwnedForAlbum: (userId: string, albumId: string) => Promise<void>
   toggleSticker: (userId: string, albumId: string, sticker: Sticker) => Promise<void>
   markAllOwned: (userId: string, albumId: string, stickers: Sticker[]) => Promise<void>
@@ -205,6 +207,31 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
       .from('user_stickers')
       .delete()
       .eq('user_collection_id', collectionId)
+  },
+
+  pushLocalDuplicatesToServer: async (userId, albumId) => {
+    const state = get()
+    const collectionId = state.collectionIds[albumId]
+    if (!collectionId) return 0
+
+    const localDups = await getDuplicateCounts(userId, albumId)
+    if (localDups.size === 0) return 0
+
+    let pushed = 0
+    await Promise.all(
+      Array.from(localDups.entries()).map(async ([sticker_id, count]) => {
+        const { error } = await supabase
+          .from('user_stickers')
+          .update({ duplicate_count: count })
+          .eq('user_collection_id', collectionId)
+          .eq('sticker_id', sticker_id)
+        if (!error) pushed++
+      })
+    )
+
+    // Refresh state from local
+    set(s => ({ duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: new Map(localDups) } }))
+    return pushed
   },
 
   setDuplicateCount: async (userId, albumId, sticker, count) => {

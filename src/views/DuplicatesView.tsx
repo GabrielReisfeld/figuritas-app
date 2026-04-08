@@ -9,9 +9,11 @@ import type { StickerWithOwned } from '../types'
 export const DuplicatesView: React.FC = () => {
   const { albums } = useAlbums()
   const { user } = useAuthStore()
-  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount } = useCollectionStore()
+  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount, pushLocalDuplicatesToServer } = useCollectionStore()
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<string | null>(null)
 
   const album = albums.find(a => a.id === selectedAlbumId)
   const { stickers } = useStickers(selectedAlbumId || undefined, album?.total_stickers)
@@ -52,6 +54,16 @@ export const DuplicatesView: React.FC = () => {
     setDuplicateCount(user.id, selectedAlbumId, sticker, next)
   }
 
+  const handleSync = async () => {
+    if (!user || !selectedAlbumId) return
+    setSyncing(true)
+    setSyncMsg(null)
+    const pushed = await pushLocalDuplicatesToServer(user.id, selectedAlbumId)
+    setSyncing(false)
+    setSyncMsg(pushed > 0 ? `✓ ${pushed} repetida${pushed !== 1 ? 's' : ''} sincronizada${pushed !== 1 ? 's' : ''}` : 'Ya estaba todo sincronizado')
+    setTimeout(() => setSyncMsg(null), 3000)
+  }
+
   if (!user) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>
@@ -72,7 +84,7 @@ export const DuplicatesView: React.FC = () => {
         {albums.map(a => <option key={a.id} value={a.id}>{a.year} – {a.name}</option>)}
       </select>
 
-      <div style={{ display: 'flex', gap: 16, margin: '16px 0', padding: '12px 16px', background: 'rgba(255,255,255,0.04)', borderRadius: 10 }}>
+      <div style={{ display: 'flex', gap: 16, margin: '16px 0', padding: '12px 16px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, alignItems: 'center' }}>
         <div>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#4ade80' }}>{owned.length}</span>
           <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>figuritas tenidas</span>
@@ -80,6 +92,12 @@ export const DuplicatesView: React.FC = () => {
         <div>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>{totalDups}</span>
           <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>repetidas en total</span>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <button onClick={handleSync} disabled={syncing} style={{ fontSize: 11, fontWeight: 700, background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.4)', borderRadius: 6, color: '#60a5fa', cursor: syncing ? 'default' : 'pointer', padding: '4px 10px' }}>
+            {syncing ? 'Sincronizando...' : '↑ Sincronizar'}
+          </button>
+          {syncMsg && <span style={{ fontSize: 11, color: '#4ade80' }}>{syncMsg}</span>}
         </div>
       </div>
 
