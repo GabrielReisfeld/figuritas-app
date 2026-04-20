@@ -25,6 +25,8 @@ export const StickerChip: React.FC<Props> = memo(({ sticker, onToggle, readOnly 
   const bgColor     = owned ? `${color}20` : `${color}08`
   const numColor    = owned ? color : `${color}66`
 
+  const hasName = sticker.label && sticker.label !== sticker.number
+
   return (
     <button
       onClick={() => !readOnly && onToggle(sticker)}
@@ -36,13 +38,13 @@ export const StickerChip: React.FC<Props> = memo(({ sticker, onToggle, readOnly 
         alignItems: 'center',
         justifyContent: 'center',
         width: 52,
-        height: 52,
+        height: hasName ? 66 : 52,
         borderRadius: 8,
         border: `2px solid ${borderColor}`,
         background: bgColor,
         cursor: readOnly ? 'default' : 'pointer',
         transition: 'all 0.15s ease',
-        padding: 0,
+        padding: '4px 3px',
         gap: 2,
       }}
       aria-pressed={owned}
@@ -51,7 +53,24 @@ export const StickerChip: React.FC<Props> = memo(({ sticker, onToggle, readOnly 
       <span style={{ fontSize: 10, fontWeight: 700, color: numColor, lineHeight: 1 }}>
         {sticker.number}
       </span>
-      {owned && <span style={{ fontSize: 13, lineHeight: 1 }}>✓</span>}
+      {hasName && (
+        <span style={{
+          fontSize: 7,
+          fontWeight: 600,
+          color: owned ? color : `${color}88`,
+          lineHeight: 1.2,
+          textAlign: 'center',
+          width: '100%',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          wordBreak: 'break-word',
+        }}>
+          {sticker.label}
+        </span>
+      )}
+      {owned && <span style={{ fontSize: 11, lineHeight: 1 }}>✓</span>}
 
       {/* Duplicate badge */}
       {duplicateCount > 0 && (
