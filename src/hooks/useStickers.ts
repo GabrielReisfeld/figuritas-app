@@ -58,14 +58,34 @@ function getSortIndex2022(number: string): number {
   return 99999
 }
 
+// ─── 2026 USA/CAN/MEX album section order ────────────────────────────────────
+const SECTIONS_2026: string[] = [
+  '00', 'FWC', 'MEX', 'RSA', 'KOR', 'CZE', 'CAN', 'BIH', 'QAT', 'SUI',
+  'BRA', 'MAR', 'HAI', 'SCO', 'USA', 'PAR', 'AUS', 'TUR', 'GER', 'CUW',
+  'CIV', 'ECU', 'NED', 'JPN', 'SWE', 'TUN', 'BEL', 'EGY', 'IRN', 'NZL',
+  'ESP', 'CPV', 'KSA', 'URU', 'FRA', 'SEN', 'IRQ', 'NOR', 'ARG', 'ALG',
+  'AUT', 'JOR', 'POR', 'COD', 'UZB', 'COL', 'ENG', 'CRO', 'GHA', 'PAN',
+]
+
+function getSortIndex2026(number: string): number {
+  if (number === '00') return 0
+  const match = number.match(/^([A-Z]+)(\d+)$/)
+  if (!match) return 99999
+  const prefix = match[1]
+  const num = parseInt(match[2])
+  const idx = SECTIONS_2026.indexOf(prefix)
+  if (idx === -1) return 99999
+  return idx * 100 + num
+}
+
 // ─── Generic sort ─────────────────────────────────────────────────────────────
 
 function sortStickers(stickers: Sticker[], albumId: string): Sticker[] {
-  const is2022 = albumId === 'a2022000-0000-0000-0000-000000000000'
-  return [...stickers].sort((a, b) => {
-    if (is2022) return getSortIndex2022(a.number) - getSortIndex2022(b.number)
-    return a.number.localeCompare(b.number, undefined, { numeric: true })
-  })
+  if (albumId === 'a2022000-0000-0000-0000-000000000000')
+    return [...stickers].sort((a, b) => getSortIndex2022(a.number) - getSortIndex2022(b.number))
+  if (albumId === 'a2026000-0000-0000-0000-000000000000')
+    return [...stickers].sort((a, b) => getSortIndex2026(a.number) - getSortIndex2026(b.number))
+  return [...stickers].sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
 }
 
 // ─── Placeholder fill ─────────────────────────────────────────────────────────
