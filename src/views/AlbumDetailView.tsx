@@ -110,12 +110,12 @@ export const AlbumDetailView: React.FC = () => {
           </span>
         </div>
         <ProgressBar pct={pct} height={8} />
-        <div style={{ display: 'flex', gap: 16, marginTop: 8, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 16, rowGap: 8, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <Stat label="Tengo" value={owned} color="#4ade80" />
           <Stat label="Faltan" value={total - owned} color="#f87171" />
           <Stat label="Total" value={total} color="#94a3b8" />
           {user && (
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={() => setConfirming('complete')} style={bulkBtn('#4ade80')}>✓ Completo</button>
               <button onClick={() => setConfirming('empty')} style={bulkBtn('#f87171')}>✗ Vaciar</button>
             </div>
