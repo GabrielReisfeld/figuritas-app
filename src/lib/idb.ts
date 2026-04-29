@@ -123,7 +123,15 @@ export async function removeCachedOwned(userId: string, albumId: string, sticker
 
 export async function setCachedOwnedBulk(userId: string, albumId: string, stickerIds: string[]) {
   const db = await getDB()
+  const existing = await db.getAllFromIndex('owned_sticker_ids', 'by-user-album', [userId, albumId])
+  const newKeySet = new Set(stickerIds.map(sid => ownedKey(userId, albumId, sid)))
+
   const tx = db.transaction('owned_sticker_ids', 'readwrite')
+  await Promise.all(
+    existing
+      .filter(e => !newKeySet.has(e.key))
+      .map(e => tx.store.delete(e.key))
+  )
   await Promise.all(
     stickerIds.map(sid =>
       tx.store.put({

@@ -264,8 +264,8 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     const state = get()
     return albums.map(album => {
       const owned = userId ? (state.ownedByAlbum[album.id]?.size ?? 0) : 0
-      const missing = album.total_stickers - owned
-      const pct = album.total_stickers > 0 ? Math.round((owned / album.total_stickers) * 100) : 0
+      const missing = Math.max(0, album.total_stickers - owned)
+      const pct = album.total_stickers > 0 ? Math.min(100, Math.round((owned / album.total_stickers) * 100)) : 0
       const dups = state.duplicatesByAlbum[album.id]
       const totalDuplicates = dups
         ? Array.from(dups.values()).reduce((sum, c) => sum + c, 0)
