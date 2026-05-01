@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned, StickerCategory, TeamBreakdown } from '../types'
+import { teamFlag } from '../lib/flags'
 
 const SPECIAL_CATEGORIES: StickerCategory[] = ['special', 'stadium', 'gold', 'badge', 'team', 'other']
 
@@ -182,6 +183,7 @@ export const AlbumDetailView: React.FC = () => {
         <StickerSection
           key={tb.team}
           title={tb.team}
+          flag={teamFlag(tb.team)}
           subtitle={`${tb.owned}/${tb.total}`}
           stickers={tb.stickers}
           onToggle={handleToggle}
@@ -202,13 +204,14 @@ export const AlbumDetailView: React.FC = () => {
 
 interface StickerSectionProps {
   title: string
+  flag?: string
   subtitle?: string
   stickers: StickerWithOwned[]
   onToggle: (s: StickerWithOwned) => void
   readOnly: boolean
 }
 
-const StickerSection: React.FC<StickerSectionProps> = ({ title, subtitle, stickers, onToggle, readOnly }) => {
+const StickerSection: React.FC<StickerSectionProps> = ({ title, flag, subtitle, stickers, onToggle, readOnly }) => {
   const ownedCount = stickers.filter(s => s.owned).length
   const pct = stickers.length > 0 ? Math.round((ownedCount / stickers.length) * 100) : 0
 
@@ -216,7 +219,10 @@ const StickerSection: React.FC<StickerSectionProps> = ({ title, subtitle, sticke
     <div style={{ marginTop: 20 }}>
       <div style={{ padding: '0 16px', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{title}</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>
+            {flag && <span style={{ fontSize: 18, marginRight: 5, verticalAlign: 'middle' }}>{flag}</span>}
+            {title}
+          </h2>
           <span style={{ fontSize: 12, color: '#64748b' }}>{subtitle ?? `${ownedCount}/${stickers.length}`}</span>
           <span style={{ marginLeft: 'auto', fontSize: 12, color: pct === 100 ? '#4ade80' : '#94a3b8', fontWeight: 700 }}>
             {pct}%

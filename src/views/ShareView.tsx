@@ -6,29 +6,7 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned } from '../types'
-
-// ─── Country helpers ──────────────────────────────────────────────────────────
-
-const FLAGS: Record<string, string> = {
-  ALG: '🇩🇿', ARG: '🇦🇷', AUS: '🇦🇺', BEL: '🇧🇪',
-  BIH: '🇧🇦', BOL: '🇧🇴', BRA: '🇧🇷', CAN: '🇨🇦',
-  CHI: '🇨🇱', CIV: '🇨🇮', CMR: '🇨🇲', COL: '🇨🇴',
-  CRC: '🇨🇷', CRO: '🇭🇷', CZE: '🇨🇿', DEN: '🇩🇰',
-  ECU: '🇪🇨', EGY: '🇪🇬', ENG: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', ESP: '🇪🇸',
-  FRA: '🇫🇷', FWC: '🏆',
-  GER: '🇩🇪', GHA: '🇬🇭', GRE: '🇬🇷',
-  IRA: '🇮🇷', IRN: '🇮🇷', IRQ: '🇮🇶', ITA: '🇮🇹',
-  JAP: '🇯🇵', JOR: '🇯🇴', JPN: '🇯🇵',
-  KOR: '🇰🇷', KSA: '🇸🇦',
-  MAR: '🇲🇦', MEX: '🇲🇽', MOR: '🇲🇦',
-  NED: '🇳🇱', NGA: '🇳🇬',
-  PAR: '🇵🇾', PER: '🇵🇪', POL: '🇵🇱', POR: '🇵🇹',
-  QAT: '🇶🇦', ROU: '🇷🇴', RSA: '🇿🇦',
-  SCO: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', SEN: '🇸🇳', SRB: '🇷🇸', SUI: '🇨🇭', SVK: '🇸🇰', SVN: '🇸🇮',
-  TUN: '🇹🇳', TUR: '🇹🇷',
-  UAE: '🇦🇪', UKR: '🇺🇦', URU: '🇺🇾', USA: '🇺🇸',
-  VEN: '🇻🇪', WAL: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
-}
+import { CODE_FLAGS } from '../lib/flags'
 
 interface CountryGroup { country: string; icon: string; nums: string[] }
 
@@ -43,7 +21,7 @@ function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): Cou
   }
   return Array.from(map.entries()).map(([country, nums]) => ({
     country,
-    icon: FLAGS[country] ?? '🌍',
+    icon: CODE_FLAGS[country] ?? '🌍',
     nums,
   }))
 }

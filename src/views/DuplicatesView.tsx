@@ -5,6 +5,7 @@ import { useStickers } from '../hooks/useStickers'
 import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import type { StickerWithOwned } from '../types'
+import { teamFlag } from '../lib/flags'
 
 export const DuplicatesView: React.FC = () => {
   const { albums } = useAlbums()
@@ -15,22 +16,17 @@ export const DuplicatesView: React.FC = () => {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
 
-  const album = albums.find(a => a.id === selectedAlbumId)
-  const { stickers } = useStickers(selectedAlbumId || undefined, album?.total_stickers)
+  const effectiveAlbumId = selectedAlbumId || albums[albums.length - 1]?.id || ''
+  const album = albums.find(a => a.id === effectiveAlbumId)
+  const { stickers } = useStickers(effectiveAlbumId || undefined, album?.total_stickers)
 
   useEffect(() => {
-    if (albums.length > 0 && !selectedAlbumId) {
-      setSelectedAlbumId(albums[albums.length - 1].id)
-    }
-  }, [albums, selectedAlbumId])
-
-  useEffect(() => {
-    if (user && selectedAlbumId) loadOwnedForAlbum(user.id, selectedAlbumId)
-  }, [user, selectedAlbumId, loadOwnedForAlbum])
+    if (user && effectiveAlbumId) loadOwnedForAlbum(user.id, effectiveAlbumId)
+  }, [user, effectiveAlbumId, loadOwnedForAlbum])
 
   const enriched = useMemo(
-    () => enrichStickers(stickers, selectedAlbumId),
-    [stickers, selectedAlbumId, enrichStickers, ownedByAlbum, duplicatesByAlbum]  // eslint-disable-line
+    () => enrichStickers(stickers, effectiveAlbumId),
+    [stickers, effectiveAlbumId, enrichStickers, ownedByAlbum, duplicatesByAlbum]  // eslint-disable-line
   )
 
   const owned: StickerWithOwned[] = useMemo(
@@ -49,16 +45,16 @@ export const DuplicatesView: React.FC = () => {
   )
 
   const handleChange = (sticker: StickerWithOwned, delta: number) => {
-    if (!user || !selectedAlbumId) return
+    if (!user || !effectiveAlbumId) return
     const next = Math.max(0, sticker.duplicateCount + delta)
-    setDuplicateCount(user.id, selectedAlbumId, sticker, next)
+    setDuplicateCount(user.id, effectiveAlbumId, sticker, next)
   }
 
   const handleSync = async () => {
-    if (!user || !selectedAlbumId) return
+    if (!user || !effectiveAlbumId) return
     setSyncing(true)
     setSyncMsg(null)
-    const pushed = await pushLocalDuplicatesToServer(user.id, selectedAlbumId)
+    const pushed = await pushLocalDuplicatesToServer(user.id, effectiveAlbumId)
     setSyncing(false)
     setSyncMsg(pushed > 0 ? `✓ ${pushed} repetida${pushed !== 1 ? 's' : ''} sincronizada${pushed !== 1 ? 's' : ''}` : 'Ya estaba todo sincronizado')
     setTimeout(() => setSyncMsg(null), 3000)
@@ -80,7 +76,7 @@ export const DuplicatesView: React.FC = () => {
         Usá + / − para registrar cuántas copias extra tenés de cada figurita
       </p>
 
-      <select value={selectedAlbumId} onChange={e => setSelectedAlbumId(e.target.value)} style={selectStyle}>
+      <select value={effectiveAlbumId} onChange={e => setSelectedAlbumId(e.target.value)} style={selectStyle}>
         {albums.map(a => <option key={a.id} value={a.id}>{a.year} – {a.name}</option>)}
       </select>
 
@@ -124,7 +120,7 @@ export const DuplicatesView: React.FC = () => {
             <span style={{ fontSize: 13, fontWeight: 700, color: '#4ade80', minWidth: 44 }}>{s.number}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.label}</div>
-              {s.team && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{s.team}</div>}
+              {s.team && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{teamFlag(s.team)} {s.team}</div>}
             </div>
             {/* Counter */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
