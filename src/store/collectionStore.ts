@@ -83,36 +83,16 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
         }
       }
       await setCachedOwnedBulk(userId, albumId, ids)
-      // sync dups to IndexedDB
+      // Sync server → IndexedDB: write non-zero counts and clear stale local entries
+      const localDups = await getDuplicateCounts(userId, albumId)
       for (const [sid, count] of liveDups) {
         await setCachedDuplicateCount(userId, albumId, sid, count)
       }
-
-      // ── One-time migration: push locally-saved dups that aren't in Supabase yet ──
-      const localDups = await getDuplicateCounts(userId, albumId)
-      const toMigrate: Array<{ sticker_id: string; count: number }> = []
-      for (const [sid, localCount] of localDups) {
-        const serverCount = liveDups.get(sid) ?? 0
-        if (localCount > 0 && localCount !== serverCount && liveSet.has(sid)) {
-          toMigrate.push({ sticker_id: sid, count: localCount })
+      for (const [sid] of localDups) {
+        if (!liveDups.has(sid)) {
+          await setCachedDuplicateCount(userId, albumId, sid, 0)
         }
       }
-      if (toMigrate.length > 0) {
-        await Promise.all(
-          toMigrate.map(({ sticker_id, count }) =>
-            supabase
-              .from('user_stickers')
-              .update({ duplicate_count: count })
-              .eq('user_collection_id', collectionId)
-              .eq('sticker_id', sticker_id)
-          )
-        )
-        // Merge migrated dups into liveDups
-        for (const { sticker_id, count } of toMigrate) {
-          liveDups.set(sticker_id, count)
-        }
-      }
-      // ─────────────────────────────────────────────────────────────────────────
 
       set(s => ({
         ownedByAlbum: { ...s.ownedByAlbum, [albumId]: liveSet },

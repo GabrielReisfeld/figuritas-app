@@ -10,7 +10,7 @@ import { teamFlag } from '../lib/flags'
 export const DuplicatesView: React.FC = () => {
   const { albums } = useAlbums()
   const { user } = useAuthStore()
-  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount, pushLocalDuplicatesToServer } = useCollectionStore()
+  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount } = useCollectionStore()
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
   const [syncing, setSyncing] = useState(false)
@@ -54,9 +54,9 @@ export const DuplicatesView: React.FC = () => {
     if (!user || !effectiveAlbumId) return
     setSyncing(true)
     setSyncMsg(null)
-    const pushed = await pushLocalDuplicatesToServer(user.id, effectiveAlbumId)
+    await loadOwnedForAlbum(user.id, effectiveAlbumId)
     setSyncing(false)
-    setSyncMsg(pushed > 0 ? `✓ ${pushed} repetida${pushed !== 1 ? 's' : ''} sincronizada${pushed !== 1 ? 's' : ''}` : 'Ya estaba todo sincronizado')
+    setSyncMsg('✓ Sincronizado con el servidor')
     setTimeout(() => setSyncMsg(null), 3000)
   }
 
