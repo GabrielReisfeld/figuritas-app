@@ -6,16 +6,7 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import type { StickerCategory, StickerWithOwned } from '../types'
 import { teamFlag } from '../lib/flags'
-
-const CATEGORY_LABEL: Record<StickerCategory, string> = {
-  special: 'Especiales',
-  stadium: 'Estadios',
-  gold:    'Doradas',
-  badge:   'Escudos',
-  team:    'Foto equipo',
-  player:  'Jugadores',
-  other:   'Otros',
-}
+import { CATEGORY_LABEL } from '../lib/categories'
 
 const CATEGORIES: StickerCategory[] = ['player', 'badge', 'team', 'stadium', 'special', 'gold', 'other']
 

@@ -8,18 +8,9 @@ import { ProgressBar } from '../components/ui/ProgressBar'
 import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned, StickerCategory, TeamBreakdown } from '../types'
 import { teamFlag } from '../lib/flags'
+import { CATEGORY_LABEL } from '../lib/categories'
 
 const SPECIAL_CATEGORIES: StickerCategory[] = ['special', 'stadium', 'gold', 'badge', 'team', 'other']
-
-const CATEGORY_LABEL: Record<StickerCategory, string> = {
-  special:  '⭐ Especiales',
-  stadium:  '🏟️ Estadios',
-  gold:     '✨ Doradas',
-  badge:    'Escudos',
-  team:     'Fotos de equipo',
-  player:   'Jugadores',
-  other:    'Otros',
-}
 
 export const AlbumDetailView: React.FC = () => {
   const { albumId } = useParams<{ albumId: string }>()
