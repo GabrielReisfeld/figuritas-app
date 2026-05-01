@@ -16,23 +16,28 @@ export const CODE_FLAGS: Record<string, string> = {
   USA: '🇺🇸', UZB: '🇺🇿', WAL: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
 }
 
-// Full team name (as stored in DB) → flag emoji
+// Full team name (as stored in DB) → flag emoji — covers all albums 2002–2026
 const TEAM_FLAGS: Record<string, string> = {
   'Algeria':                '🇩🇿',
+  'Angola':                 '🇦🇴',
   'Argentina':              '🇦🇷',
   'Australia':              '🇦🇺',
   'Austria':                '🇦🇹',
   'Belgium':                '🇧🇪',
   'Bosnia and Herzegovina': '🇧🇦',
+  'Bosnia & Herzegovina':   '🇧🇦',
   'Brazil':                 '🇧🇷',
   'Cameroon':               '🇨🇲',
   'Canada':                 '🇨🇦',
   'Cape Verde':             '🇨🇻',
+  'Chile':                  '🇨🇱',
+  'China':                  '🇨🇳',
   'Colombia':               '🇨🇴',
   'Congo DR':               '🇨🇩',
   'Costa Rica':             '🇨🇷',
   'Croatia':                '🇭🇷',
   'Curaçao':                '🇨🇼',
+  'Czech Republic':         '🇨🇿',
   'Czechia':                '🇨🇿',
   'Denmark':                '🇩🇰',
   'Ecuador':                '🇪🇨',
@@ -41,33 +46,51 @@ const TEAM_FLAGS: Record<string, string> = {
   'France':                 '🇫🇷',
   'Germany':                '🇩🇪',
   'Ghana':                  '🇬🇭',
+  'Greece':                 '🇬🇷',
   'Haiti':                  '🇭🇹',
+  'Honduras':               '🇭🇳',
+  'Iceland':                '🇮🇸',
   'Iran':                   '🇮🇷',
   'Iraq':                   '🇮🇶',
+  'Ireland':                '🇮🇪',
+  'Italy':                  '🇮🇹',
   'Ivory Coast':            '🇨🇮',
   'Japan':                  '🇯🇵',
   'Jordan':                 '🇯🇴',
+  'Korea DPR':              '🇰🇵',
+  'Korea Republic':         '🇰🇷',
   'Mexico':                 '🇲🇽',
+  'México':                 '🇲🇽',
   'Morocco':                '🇲🇦',
   'Netherlands':            '🇳🇱',
   'New Zealand':            '🇳🇿',
+  'Nigeria':                '🇳🇬',
   'Norway':                 '🇳🇴',
   'Panama':                 '🇵🇦',
   'Paraguay':               '🇵🇾',
+  'Peru':                   '🇵🇪',
   'Poland':                 '🇵🇱',
   'Portugal':               '🇵🇹',
   'Qatar':                  '🇶🇦',
+  'Russia':                 '🇷🇺',
   'Saudi Arabia':           '🇸🇦',
   'Scotland':               '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
   'Senegal':                '🇸🇳',
   'Serbia':                 '🇷🇸',
+  'Serbia & Montenegro':    '🇷🇸',
+  'Slovakia':               '🇸🇰',
+  'Slovenia':               '🇸🇮',
   'South Africa':           '🇿🇦',
   'South Korea':            '🇰🇷',
   'Spain':                  '🇪🇸',
   'Sweden':                 '🇸🇪',
   'Switzerland':            '🇨🇭',
+  'Togo':                   '🇹🇬',
+  'Trinidad and Tobago':    '🇹🇹',
   'Tunisia':                '🇹🇳',
+  'Turkey':                 '🇹🇷',
   'Türkiye':                '🇹🇷',
+  'Ukraine':                '🇺🇦',
   'Uruguay':                '🇺🇾',
   'USA':                    '🇺🇸',
   'Uzbekistan':             '🇺🇿',
@@ -77,4 +100,19 @@ const TEAM_FLAGS: Record<string, string> = {
 export function teamFlag(team: string | null | undefined): string {
   if (!team) return ''
   return TEAM_FLAGS[team] ?? ''
+}
+
+// Album name (as stored in DB) → host country flag(s)
+const ALBUM_FLAGS: Record<string, string> = {
+  'Korea/Japan':  '🇰🇷🇯🇵',
+  'Germany':      '🇩🇪',
+  'South Africa': '🇿🇦',
+  'Brazil':       '🇧🇷',
+  'Russia':       '🇷🇺',
+  'Qatar':        '🇶🇦',
+  'USA/CAN/MEX':  '🇺🇸🇨🇦🇲🇽',
+}
+
+export function albumFlags(name: string): string {
+  return ALBUM_FLAGS[name] ?? ''
 }

@@ -12,9 +12,9 @@ import { teamFlag } from '../lib/flags'
 const SPECIAL_CATEGORIES: StickerCategory[] = ['special', 'stadium', 'gold', 'badge', 'team', 'other']
 
 const CATEGORY_LABEL: Record<StickerCategory, string> = {
-  special:  'Especiales',
-  stadium:  'Estadios',
-  gold:     'Doradas',
+  special:  '⭐ Especiales',
+  stadium:  '🏟️ Estadios',
+  gold:     '✨ Doradas',
   badge:    'Escudos',
   team:     'Fotos de equipo',
   player:   'Jugadores',

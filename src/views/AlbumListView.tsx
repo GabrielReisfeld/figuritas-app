@@ -5,6 +5,7 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import type { AlbumWithStats } from '../types'
+import { albumFlags } from '../lib/flags'
 
 export const AlbumListView: React.FC = () => {
   const { albums, loading } = useAlbums()
@@ -54,6 +55,9 @@ const AlbumCard: React.FC<{ album: AlbumWithStats; isLoggedIn: boolean }> = ({ a
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18, fontWeight: 800, color: '#4ade80' }}>{album.year}</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: '#f1f5f9' }}>{album.name}</span>
+            {albumFlags(album.name) && (
+              <span style={{ fontSize: 16 }}>{albumFlags(album.name)}</span>
+            )}
           </div>
           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
             {album.total_stickers} figuritas
