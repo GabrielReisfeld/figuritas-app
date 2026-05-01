@@ -7,6 +7,54 @@ import { useAuthStore } from '../store/authStore'
 import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned } from '../types'
 
+// ─── Country helpers ──────────────────────────────────────────────────────────
+
+const FLAGS: Record<string, string> = {
+  ALG: '🇩🇿', ARG: '🇦🇷', AUS: '🇦🇺', BEL: '🇧🇪',
+  BIH: '🇧🇦', BOL: '🇧🇴', BRA: '🇧🇷', CAN: '🇨🇦',
+  CHI: '🇨🇱', CIV: '🇨🇮', CMR: '🇨🇲', COL: '🇨🇴',
+  CRC: '🇨🇷', CRO: '🇭🇷', CZE: '🇨🇿', DEN: '🇩🇰',
+  ECU: '🇪🇨', EGY: '🇪🇬', ENG: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', ESP: '🇪🇸',
+  FRA: '🇫🇷', FWC: '🏆',
+  GER: '🇩🇪', GHA: '🇬🇭', GRE: '🇬🇷',
+  IRA: '🇮🇷', IRN: '🇮🇷', IRQ: '🇮🇶', ITA: '🇮🇹',
+  JAP: '🇯🇵', JOR: '🇯🇴', JPN: '🇯🇵',
+  KOR: '🇰🇷', KSA: '🇸🇦',
+  MAR: '🇲🇦', MEX: '🇲🇽', MOR: '🇲🇦',
+  NED: '🇳🇱', NGA: '🇳🇬',
+  PAR: '🇵🇾', PER: '🇵🇪', POL: '🇵🇱', POR: '🇵🇹',
+  QAT: '🇶🇦', ROU: '🇷🇴', RSA: '🇿🇦',
+  SCO: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', SEN: '🇸🇳', SRB: '🇷🇸', SUI: '🇨🇭', SVK: '🇸🇰', SVN: '🇸🇮',
+  TUN: '🇹🇳', TUR: '🇹🇷',
+  UAE: '🇦🇪', UKR: '🇺🇦', URU: '🇺🇾', USA: '🇺🇸',
+  VEN: '🇻🇪', WAL: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+}
+
+interface CountryGroup { country: string; icon: string; nums: string[] }
+
+function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
+  const map = new Map<string, string[]>()
+  for (const s of stickers) {
+    const code = s.number.match(/^[A-Z]+/)?.[0]
+    if (!code) continue
+    if (!map.has(code)) map.set(code, [])
+    const num = s.number.replace(/^[A-Z]+/, '')
+    map.get(code)!.push(num + (showDupCount && s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''))
+  }
+  return Array.from(map.entries()).map(([country, nums]) => ({
+    country,
+    icon: FLAGS[country] ?? '🌍',
+    nums,
+  }))
+}
+
+function buildCountryMessage(albumYear: number | string, type: 'faltantes' | 'repetidas', groups: CountryGroup[]): string {
+  const header = type === 'faltantes'
+    ? `Me faltan las siguientes figuritas del Álbum del Mundial ${albumYear}:`
+    : `Tengo las siguientes figuritas repetidas del Álbum del Mundial ${albumYear}:`
+  return `${header}\n${groups.map(g => `${g.icon} ${g.country}: ${g.nums.join(', ')}`).join('\n')}`
+}
+
 // ─── Share view ───────────────────────────────────────────────────────────────
 
 export const ShareView: React.FC = () => {
@@ -16,44 +64,30 @@ export const ShareView: React.FC = () => {
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
   const [copied, setCopied] = useState(false)
 
-  const album = albums.find(a => a.id === selectedAlbumId)
-  const { stickers } = useStickers(selectedAlbumId || undefined, album?.total_stickers)
+  const effectiveAlbumId = selectedAlbumId || albums[albums.length - 1]?.id || ''
+  const album = albums.find(a => a.id === effectiveAlbumId)
+  const { stickers } = useStickers(effectiveAlbumId || undefined, album?.total_stickers)
 
   useEffect(() => {
-    if (albums.length > 0 && !selectedAlbumId) {
-      setSelectedAlbumId(albums[albums.length - 1].id)
-    }
-  }, [albums, selectedAlbumId])
-
-  useEffect(() => {
-    if (user && selectedAlbumId) loadOwnedForAlbum(user.id, selectedAlbumId)
-  }, [user, selectedAlbumId, loadOwnedForAlbum])
+    if (user && effectiveAlbumId) loadOwnedForAlbum(user.id, effectiveAlbumId)
+  }, [user, effectiveAlbumId, loadOwnedForAlbum])
 
   const enriched = useMemo(
-    () => enrichStickers(stickers, selectedAlbumId),
-    [stickers, selectedAlbumId, enrichStickers, ownedByAlbum, duplicatesByAlbum]  // eslint-disable-line
+    () => enrichStickers(stickers, effectiveAlbumId),
+    [stickers, effectiveAlbumId, enrichStickers, ownedByAlbum, duplicatesByAlbum]  // eslint-disable-line
   )
 
-  const ownedIds = Array.from(ownedByAlbum[selectedAlbumId] ?? [])
-  const dups = duplicatesByAlbum[selectedAlbumId] ?? new Map<string, number>()
+  const ownedIds = Array.from(ownedByAlbum[effectiveAlbumId] ?? [])
 
-  // Missing sticker numbers in album order (stickers array is already sorted)
-  const missingNumbers = useMemo(
-    () => enriched.filter(s => !s.owned).map(s => s.number),
-    [enriched]
-  )
+  const missingList = useMemo(() => enriched.filter(s => !s.owned), [enriched])
+  const dupList = useMemo(() => enriched.filter(s => s.owned && s.duplicateCount > 0), [enriched])
 
-  // Duplicate stickers list in album order
-  const dupList = useMemo(
-    () => enriched.filter(s => s.owned && s.duplicateCount > 0),
-    [enriched]
-  )
+  const hasCountryCodes = useMemo(() => enriched.some(s => /^[A-Z]/.test(s.number)), [enriched])
 
-  // Share messages
   const missingMessage = useMemo(() => {
-    if (!album || missingNumbers.length === 0) return ''
-    return `Me faltan las siguientes figuritas del Álbum del Mundial ${album.year}:\n${missingNumbers.join(', ')}`
-  }, [album, missingNumbers])
+    if (!album || missingList.length === 0) return ''
+    return `Me faltan las siguientes figuritas del Álbum del Mundial ${album.year}:\n${missingList.map(s => s.number).join(', ')}`
+  }, [album, missingList])
 
   const dupMessage = useMemo(() => {
     if (!album || dupList.length === 0) return ''
@@ -61,21 +95,31 @@ export const ShareView: React.FC = () => {
     return `Tengo las siguientes figuritas repetidas del Álbum del Mundial ${album.year}:\n${parts.join(', ')}`
   }, [album, dupList])
 
-  const shareUrl = useMemo(() => {
-    if (!selectedAlbumId || ownedIds.length === 0) return ''
-    const encoded = btoa(ownedIds.join(','))
-    const dupEncoded = dups.size > 0
-      ? '&d=' + btoa(Array.from(dups.entries()).map(([id, c]) => `${id}:${c}`).join(','))
-      : ''
-    return `${window.location.origin}/shared/${selectedAlbumId}?o=${encoded}${dupEncoded}`
-  }, [selectedAlbumId, ownedIds, dups])
+  const missingGroups = useMemo(
+    () => hasCountryCodes ? groupByCountry(missingList) : [],
+    [hasCountryCodes, missingList]
+  )
+
+  const dupGroups = useMemo(
+    () => hasCountryCodes ? groupByCountry(dupList, true) : [],
+    [hasCountryCodes, dupList]
+  )
+
+  const missingCountryMsg = useMemo(
+    () => album && missingGroups.length > 0 ? buildCountryMessage(album.year, 'faltantes', missingGroups) : '',
+    [album, missingGroups]
+  )
+
+  const dupCountryMsg = useMemo(
+    () => album && dupGroups.length > 0 ? buildCountryMessage(album.year, 'repetidas', dupGroups) : '',
+    [album, dupGroups]
+  )
 
   async function copyText(text: string) {
     if (!text) return
     try {
       await navigator.clipboard.writeText(text)
     } catch {
-      // Fallback for browsers/WebViews that block clipboard
       const el = document.createElement('textarea')
       el.value = text
       el.style.position = 'fixed'
@@ -97,23 +141,6 @@ export const ShareView: React.FC = () => {
     }
   }
 
-  function exportJson() {
-    if (!selectedAlbumId) return
-    const data = {
-      album,
-      owned_sticker_ids: ownedIds,
-      duplicates: Object.fromEntries(dups),
-      exported_at: new Date().toISOString(),
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `figuritas-${album?.year ?? 'album'}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   if (!user) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>
@@ -126,7 +153,7 @@ export const ShareView: React.FC = () => {
     <div style={{ padding: 16 }}>
       <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 16 }}>Compartir</h1>
 
-      <select value={selectedAlbumId} onChange={e => setSelectedAlbumId(e.target.value)} style={selectStyle}>
+      <select value={effectiveAlbumId} onChange={e => setSelectedAlbumId(e.target.value)} style={selectStyle}>
         {albums.map(a => <option key={a.id} value={a.id}>{a.year} – {a.name}</option>)}
       </select>
 
@@ -137,44 +164,30 @@ export const ShareView: React.FC = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
 
-        {/* Share missing */}
         {missingMessage && (
           <ShareCard
             label="Compartir faltantes"
-            preview={missingMessage}
-            onCopy={() => copyText(missingMessage)}
-            onShare={() => shareNative(missingMessage)}
+            message={missingMessage}
+            countryMessage={missingCountryMsg}
+            countryGroups={hasCountryCodes ? missingGroups : undefined}
+            onCopy={copyText}
+            onShare={shareNative}
             copied={copied}
           />
         )}
 
-        {/* Share duplicates */}
         {dupMessage && (
           <ShareCard
             label="Compartir repetidas"
-            preview={dupMessage}
-            onCopy={() => copyText(dupMessage)}
-            onShare={() => shareNative(dupMessage)}
+            message={dupMessage}
+            countryMessage={dupCountryMsg}
+            countryGroups={hasCountryCodes ? dupGroups : undefined}
+            onCopy={copyText}
+            onShare={shareNative}
             copied={copied}
           />
         )}
 
-        {/* Share URL */}
-        {shareUrl && (
-          <div style={cardStyle}>
-            <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, fontWeight: 600 }}>Link de colección completa</p>
-            <div style={{ fontSize: 11, color: '#475569', wordBreak: 'break-all', fontFamily: 'monospace', marginBottom: 10 }}>
-              {shareUrl}
-            </div>
-            <button onClick={() => copyText(shareUrl)} style={btnStyle('#60a5fa')}>
-              {copied ? '✓ Copiado' : '🔗 Copiar link'}
-            </button>
-          </div>
-        )}
-
-        <button onClick={exportJson} disabled={!selectedAlbumId} style={btnStyle('#a78bfa')}>
-          ⬇ Exportar JSON
-        </button>
       </div>
     </div>
   )
@@ -184,34 +197,61 @@ export const ShareView: React.FC = () => {
 
 interface ShareCardProps {
   label: string
-  preview: string
-  onCopy: () => void
-  onShare: () => void
+  message: string
+  countryMessage?: string
+  countryGroups?: CountryGroup[]
+  onCopy: (text: string) => void
+  onShare: (text: string) => void
   copied: boolean
 }
 
-const ShareCard: React.FC<ShareCardProps> = ({ label, preview, onCopy, onShare, copied }) => (
-  <div style={cardStyle}>
-    <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, fontWeight: 600 }}>{label}</p>
-    <pre style={{
-      fontSize: 11, color: '#94a3b8', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-      background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: 10, margin: '0 0 10px',
-      maxHeight: 120, overflow: 'auto',
-    }}>
-      {preview}
-    </pre>
-    <div style={{ display: 'flex', gap: 8 }}>
-      <button onClick={onCopy} style={{ ...btnStyle('#4ade80'), flex: 1 }}>
-        {copied ? '✓ Copiado' : '📋 Copiar'}
-      </button>
-      {typeof navigator !== 'undefined' && 'share' in navigator && (
-        <button onClick={onShare} style={{ ...btnStyle('#60a5fa'), flex: 1 }}>
-          ↗ Compartir
-        </button>
+const ShareCard: React.FC<ShareCardProps> = ({
+  label, message, countryMessage, countryGroups, onCopy, onShare, copied,
+}) => {
+  const [tab, setTab] = useState<'list' | 'country'>('list')
+  const hasCountry = countryGroups && countryGroups.length > 0
+  const activeMessage = tab === 'country' && countryMessage ? countryMessage : message
+
+  return (
+    <div style={cardStyle}>
+      <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, fontWeight: 600 }}>{label}</p>
+
+      {hasCountry && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+          <button onClick={() => setTab('list')} style={tabStyle(tab === 'list')}>Lista</button>
+          <button onClick={() => setTab('country')} style={tabStyle(tab === 'country')}>Por país</button>
+        </div>
       )}
+
+      {tab === 'list' || !hasCountry ? (
+        <pre style={previewStyle}>{message}</pre>
+      ) : (
+        <div style={{ ...previewStyle, whiteSpace: 'normal' }}>
+          {countryGroups!.map(g => (
+            <div key={g.country} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 17, lineHeight: '1.3', flexShrink: 0 }}>{g.icon}</span>
+              <div style={{ fontSize: 12, lineHeight: '1.5' }}>
+                <span style={{ fontWeight: 700, color: '#94a3b8' }}>{g.country} </span>
+                <span style={{ color: '#cbd5e1' }}>{g.nums.join(', ')}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => onCopy(activeMessage)} style={{ ...btnStyle('#4ade80'), flex: 1 }}>
+          {copied ? '✓ Copiado' : '📋 Copiar'}
+        </button>
+        {typeof navigator !== 'undefined' && 'share' in navigator && (
+          <button onClick={() => onShare(activeMessage)} style={{ ...btnStyle('#60a5fa'), flex: 1 }}>
+            ↗ Compartir
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 // ─── Shared (public, read-only) view ─────────────────────────────────────────
 
@@ -301,6 +341,32 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.1)',
   borderRadius: 12,
   padding: 14,
+}
+
+const previewStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#94a3b8',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  background: 'rgba(0,0,0,0.2)',
+  borderRadius: 8,
+  padding: 10,
+  margin: '0 0 10px',
+  maxHeight: 200,
+  overflow: 'auto',
+}
+
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+    border: `1px solid ${active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
+    borderRadius: 8,
+    color: active ? '#f1f5f9' : '#64748b',
+    cursor: 'pointer',
+    fontSize: 11,
+    fontWeight: active ? 700 : 400,
+    padding: '5px 12px',
+  }
 }
 
 function btnStyle(color: string): React.CSSProperties {
