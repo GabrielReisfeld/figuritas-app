@@ -13,8 +13,6 @@ export const DuplicatesView: React.FC = () => {
   const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount } = useCollectionStore()
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
-  const [syncing, setSyncing] = useState(false)
-  const [syncMsg, setSyncMsg] = useState<string | null>(null)
 
   const effectiveAlbumId = selectedAlbumId || albums[albums.length - 1]?.id || ''
   const album = albums.find(a => a.id === effectiveAlbumId)
@@ -50,16 +48,6 @@ export const DuplicatesView: React.FC = () => {
     setDuplicateCount(user.id, effectiveAlbumId, sticker, next)
   }
 
-  const handleSync = async () => {
-    if (!user || !effectiveAlbumId) return
-    setSyncing(true)
-    setSyncMsg(null)
-    await loadOwnedForAlbum(user.id, effectiveAlbumId)
-    setSyncing(false)
-    setSyncMsg('✓ Sincronizado con el servidor')
-    setTimeout(() => setSyncMsg(null), 3000)
-  }
-
   if (!user) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>
@@ -88,12 +76,6 @@ export const DuplicatesView: React.FC = () => {
         <div>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>{totalDups}</span>
           <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>repetidas en total</span>
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <button onClick={handleSync} disabled={syncing} style={{ fontSize: 11, fontWeight: 700, background: 'rgba(96,165,250,0.15)', border: '1px solid rgba(96,165,250,0.4)', borderRadius: 6, color: '#60a5fa', cursor: syncing ? 'default' : 'pointer', padding: '4px 10px' }}>
-            {syncing ? 'Sincronizando...' : '↑ Sincronizar'}
-          </button>
-          {syncMsg && <span style={{ fontSize: 11, color: '#4ade80' }}>{syncMsg}</span>}
         </div>
       </div>
 
