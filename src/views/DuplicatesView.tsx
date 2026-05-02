@@ -10,16 +10,22 @@ import { teamFlag } from '../lib/flags'
 export const DuplicatesView: React.FC = () => {
   const { albums } = useAlbums()
   const { user } = useAuthStore()
-  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount } = useCollectionStore()
+  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, duplicatesByAlbum, setDuplicateCount, pushLocalDuplicatesToServer } = useCollectionStore()
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
+  const [dirty, setDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveResult, setSaveResult] = useState<'ok' | 'error' | null>(null)
 
   const effectiveAlbumId = selectedAlbumId || albums[albums.length - 1]?.id || ''
   const album = albums.find(a => a.id === effectiveAlbumId)
   const { stickers } = useStickers(effectiveAlbumId || undefined, album?.total_stickers)
 
   useEffect(() => {
-    if (user && effectiveAlbumId) loadOwnedForAlbum(user.id, effectiveAlbumId)
+    if (user && effectiveAlbumId) {
+      setDirty(false)
+      loadOwnedForAlbum(user.id, effectiveAlbumId)
+    }
   }, [user, effectiveAlbumId, loadOwnedForAlbum])
 
   const enriched = useMemo(
@@ -46,6 +52,24 @@ export const DuplicatesView: React.FC = () => {
     if (!user || !effectiveAlbumId) return
     const next = Math.max(0, sticker.duplicateCount + delta)
     setDuplicateCount(user.id, effectiveAlbumId, sticker, next)
+    setDirty(true)
+    setSaveResult(null)
+  }
+
+  const handleSave = async () => {
+    if (!user || !effectiveAlbumId) return
+    setSaving(true)
+    setSaveResult(null)
+    try {
+      await pushLocalDuplicatesToServer(user.id, effectiveAlbumId)
+      setDirty(false)
+      setSaveResult('ok')
+    } catch {
+      setSaveResult('error')
+    } finally {
+      setSaving(false)
+      setTimeout(() => setSaveResult(null), 3000)
+    }
   }
 
   if (!user) {
@@ -76,6 +100,27 @@ export const DuplicatesView: React.FC = () => {
         <div>
           <span style={{ fontSize: 18, fontWeight: 800, color: '#f59e0b' }}>{totalDups}</span>
           <span style={{ fontSize: 11, color: '#64748b', marginLeft: 4 }}>repetidas en total</span>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          <button
+            onClick={handleSave}
+            disabled={saving || !dirty}
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              background: dirty ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${dirty ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.08)'}`,
+              borderRadius: 6,
+              color: dirty ? '#4ade80' : '#475569',
+              cursor: saving || !dirty ? 'default' : 'pointer',
+              padding: '4px 10px',
+              transition: 'all 0.2s',
+            }}
+          >
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+          {saveResult === 'ok' && <span style={{ fontSize: 11, color: '#4ade80' }}>✓ Guardado</span>}
+          {saveResult === 'error' && <span style={{ fontSize: 11, color: '#f87171' }}>Error al guardar</span>}
         </div>
       </div>
 

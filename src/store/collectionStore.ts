@@ -192,26 +192,48 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   pushLocalDuplicatesToServer: async (userId, albumId) => {
     const state = get()
     const collectionId = state.collectionIds[albumId]
-    if (!collectionId) return 0
+    if (!collectionId) throw new Error('No collection ID')
 
+    // What the user wants locally
     const localDups = await getDuplicateCounts(userId, albumId)
-    if (localDups.size === 0) return 0
 
-    let pushed = 0
-    await Promise.all(
-      Array.from(localDups.entries()).map(async ([sticker_id, count]) => {
-        const { error } = await supabase
-          .from('user_stickers')
-          .update({ duplicate_count: count })
-          .eq('user_collection_id', collectionId)
-          .eq('sticker_id', sticker_id)
-        if (!error) pushed++
-      })
-    )
+    // What the server currently has (need this to know what to zero out)
+    const { data: serverRows, error: fetchError } = await supabase
+      .from('user_stickers')
+      .select('sticker_id, duplicate_count')
+      .eq('user_collection_id', collectionId)
+    if (fetchError) throw fetchError
 
-    // Refresh state from local
+    const serverDups = new Map<string, number>()
+    for (const row of serverRows ?? []) {
+      if ((row.duplicate_count ?? 0) > 0) serverDups.set(row.sticker_id, row.duplicate_count)
+    }
+
+    // Build minimal update list: changed values + stickers zeroed locally
+    const updates: Array<{ sticker_id: string; count: number }> = []
+    for (const [sid, count] of localDups) {
+      if (serverDups.get(sid) !== count) updates.push({ sticker_id: sid, count })
+    }
+    for (const [sid] of serverDups) {
+      if (!localDups.has(sid)) updates.push({ sticker_id: sid, count: 0 })
+    }
+
+    if (updates.length > 0) {
+      const results = await Promise.all(
+        updates.map(({ sticker_id, count }) =>
+          supabase
+            .from('user_stickers')
+            .update({ duplicate_count: count })
+            .eq('user_collection_id', collectionId)
+            .eq('sticker_id', sticker_id)
+        )
+      )
+      const failed = results.filter(r => r.error)
+      if (failed.length > 0) throw new Error('Some updates failed')
+    }
+
     set(s => ({ duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: new Map(localDups) } }))
-    return pushed
+    return localDups.size
   },
 
   setDuplicateCount: async (userId, albumId, sticker, count) => {
@@ -225,19 +247,8 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     } else {
       nextDups.set(sticker.id, count)
     }
-    // Optimistic local update
     set(s => ({ duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: nextDups } }))
     await setCachedDuplicateCount(userId, albumId, sticker.id, count)
-
-    // Sync to Supabase
-    const collectionId = state.collectionIds[albumId]
-    if (navigator.onLine && collectionId) {
-      await supabase
-        .from('user_stickers')
-        .update({ duplicate_count: count })
-        .eq('user_collection_id', collectionId)
-        .eq('sticker_id', sticker.id)
-    }
   },
 
   enrichAlbums: (albums, userId) => {
