@@ -41,14 +41,13 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     if (inFlight.has(key)) return inFlight.get(key)!
 
     const promise = (async () => {
-    // 1. Load from IndexedDB (instant)
-    const [cached, cachedDups] = await Promise.all([
-      getCachedOwnedIds(userId, albumId),
-      getDuplicateCounts(userId, albumId),
-    ])
+    // 1. Load owned IDs from IndexedDB (instant).
+    // Duplicate counts are intentionally NOT pre-loaded from IDB — stale counts
+    // would briefly show every sticker as a duplicate before Supabase corrects it.
+    const cached = await getCachedOwnedIds(userId, albumId)
     set(s => ({
       ownedByAlbum: { ...s.ownedByAlbum, [albumId]: cached },
-      duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: cachedDups },
+      duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: new Map() },
     }))
 
     // 2. Ensure collection row exists in Supabase
