@@ -85,7 +85,12 @@ function sortStickers(stickers: Sticker[], albumId: string): Sticker[] {
     return [...stickers].sort((a, b) => getSortIndex2022(a.number) - getSortIndex2022(b.number))
   if (albumId === 'a2026000-0000-0000-0000-000000000000')
     return [...stickers].sort((a, b) => getSortIndex2026(a.number) - getSortIndex2026(b.number))
-  return [...stickers].sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
+  return [...stickers].sort((a, b) => {
+    const an = parseInt(a.number, 10)
+    const bn = parseInt(b.number, 10)
+    if (!isNaN(an) && !isNaN(bn)) return an - bn
+    return a.number.localeCompare(b.number, undefined, { numeric: true })
+  })
 }
 
 // ─── Placeholder fill ─────────────────────────────────────────────────────────
