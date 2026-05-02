@@ -31,6 +31,14 @@ export const AlbumDetailView: React.FC = () => {
   const owned = ownedByAlbum[albumId ?? '']?.size ?? 0
   const total = album?.total_stickers ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((owned / total) * 100)) : 0
+  const { duplicatesByAlbum } = useCollectionStore()
+  const duplicates = useMemo(() => {
+    const dups = duplicatesByAlbum[albumId ?? '']
+    if (!dups) return 0
+    let sum = 0
+    for (const count of dups.values()) sum += count
+    return sum
+  }, [duplicatesByAlbum, albumId])
 
   // Build sections in album order: each contiguous run of same team/category becomes one section
   const sections = useMemo(() => {
@@ -107,6 +115,7 @@ export const AlbumDetailView: React.FC = () => {
           <Stat label="Tengo" value={owned} color="#4ade80" />
           <Stat label="Faltan" value={total - owned} color="#f87171" />
           <Stat label="Total" value={total} color="#94a3b8" />
+          <Stat label="Repetidas" value={duplicates} color="#fb923c" />
           {user && (
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={() => setConfirming('complete')} style={bulkBtn('#4ade80')}>✓ Completo</button>
