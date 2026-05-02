@@ -82,10 +82,14 @@ export async function getCachedAlbums(): Promise<Album[]> {
 
 // ─── Stickers ─────────────────────────────────────────────────────────────────
 
-export async function cacheStickers(stickers: Sticker[]) {
+export async function cacheStickers(albumId: string, stickers: Sticker[]) {
   const db = await getDB()
   const tx = db.transaction('stickers', 'readwrite')
-  await Promise.all(stickers.map(s => tx.store.put(s)))
+  const existingKeys = await tx.store.index('by-album').getAllKeys(albumId)
+  await Promise.all([
+    ...existingKeys.map(k => tx.store.delete(k)),
+    ...stickers.map(s => tx.store.put(s)),
+  ])
   await tx.done
 }
 

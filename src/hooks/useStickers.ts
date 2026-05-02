@@ -142,7 +142,7 @@ export function useStickers(albumId: string | undefined, totalStickers = 0) {
         return
       }
       if (data) {
-        await cacheStickers(data)
+        await cacheStickers(albumId as string, data)
         setStickers(fillPlaceholders(sortStickers(data, albumId as string), albumId as string, totalStickers))
       }
       setLoading(false)
