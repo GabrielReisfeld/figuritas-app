@@ -13,6 +13,8 @@ import {
 } from '../lib/idb'
 import type { Album, Sticker, AlbumWithStats, StickerWithOwned } from '../types'
 
+const inFlight = new Map<string, Promise<void>>()
+
 interface CollectionState {
   ownedByAlbum: Record<string, Set<string>>
   collectionIds: Record<string, string>
@@ -35,6 +37,10 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
   duplicatesByAlbum: {},
 
   loadOwnedForAlbum: async (userId, albumId) => {
+    const key = `${userId}:${albumId}`
+    if (inFlight.has(key)) return inFlight.get(key)!
+
+    const promise = (async () => {
     // 1. Load from IndexedDB (instant)
     const [cached, cachedDups] = await Promise.all([
       getCachedOwnedIds(userId, albumId),
@@ -99,6 +105,11 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
         duplicatesByAlbum: { ...s.duplicatesByAlbum, [albumId]: liveDups },
       }))
     }
+    })()
+
+    inFlight.set(key, promise)
+    promise.finally(() => inFlight.delete(key))
+    return promise
   },
 
   toggleSticker: async (userId, albumId, sticker) => {

@@ -32,7 +32,7 @@ export const AlbumDetailView: React.FC = () => {
 
   const owned = ownedByAlbum[albumId ?? '']?.size ?? 0
   const total = album?.total_stickers ?? 0
-  const pct = total > 0 ? Math.round((owned / total) * 100) : 0
+  const pct = total > 0 ? Math.min(100, Math.round((owned / total) * 100)) : 0
 
   // Team sections — use Map insertion order (preserves album order for numbered albums)
   const teamBreakdowns: TeamBreakdown[] = useMemo(() => {
