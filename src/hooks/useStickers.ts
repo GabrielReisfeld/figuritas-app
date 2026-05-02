@@ -59,12 +59,59 @@ function getSortIndex2022(number: string): number {
 }
 
 // ─── 2026 USA/CAN/MEX album section order ────────────────────────────────────
-const SECTIONS_2026: string[] = [
-  '00', 'FWC', 'MEX', 'RSA', 'KOR', 'CZE', 'CAN', 'BIH', 'QAT', 'SUI',
-  'BRA', 'MAR', 'HAI', 'SCO', 'USA', 'PAR', 'AUS', 'TUR', 'GER', 'CUW',
-  'CIV', 'ECU', 'NED', 'JPN', 'SWE', 'TUN', 'BEL', 'EGY', 'IRN', 'NZL',
-  'ESP', 'CPV', 'KSA', 'URU', 'FRA', 'SEN', 'IRQ', 'NOR', 'ARG', 'ALG',
-  'AUT', 'JOR', 'POR', 'COD', 'UZB', 'COL', 'ENG', 'CRO', 'GHA', 'PAN',
+// FWC appears twice: FWC1-8 (intro/host nations) and FWC9-19 (after Panama, end of album)
+const SECTIONS_2026: Array<{ prefix: string; min: number; max: number }> = [
+  { prefix: '00',  min: 0,  max: 0  },
+  { prefix: 'FWC', min: 1,  max: 8  },
+  { prefix: 'MEX', min: 1,  max: 99 },
+  { prefix: 'RSA', min: 1,  max: 99 },
+  { prefix: 'KOR', min: 1,  max: 99 },
+  { prefix: 'CZE', min: 1,  max: 99 },
+  { prefix: 'CAN', min: 1,  max: 99 },
+  { prefix: 'BIH', min: 1,  max: 99 },
+  { prefix: 'QAT', min: 1,  max: 99 },
+  { prefix: 'SUI', min: 1,  max: 99 },
+  { prefix: 'BRA', min: 1,  max: 99 },
+  { prefix: 'MAR', min: 1,  max: 99 },
+  { prefix: 'HAI', min: 1,  max: 99 },
+  { prefix: 'SCO', min: 1,  max: 99 },
+  { prefix: 'USA', min: 1,  max: 99 },
+  { prefix: 'PAR', min: 1,  max: 99 },
+  { prefix: 'AUS', min: 1,  max: 99 },
+  { prefix: 'TUR', min: 1,  max: 99 },
+  { prefix: 'GER', min: 1,  max: 99 },
+  { prefix: 'CUW', min: 1,  max: 99 },
+  { prefix: 'CIV', min: 1,  max: 99 },
+  { prefix: 'ECU', min: 1,  max: 99 },
+  { prefix: 'NED', min: 1,  max: 99 },
+  { prefix: 'JPN', min: 1,  max: 99 },
+  { prefix: 'SWE', min: 1,  max: 99 },
+  { prefix: 'TUN', min: 1,  max: 99 },
+  { prefix: 'BEL', min: 1,  max: 99 },
+  { prefix: 'EGY', min: 1,  max: 99 },
+  { prefix: 'IRN', min: 1,  max: 99 },
+  { prefix: 'NZL', min: 1,  max: 99 },
+  { prefix: 'ESP', min: 1,  max: 99 },
+  { prefix: 'CPV', min: 1,  max: 99 },
+  { prefix: 'KSA', min: 1,  max: 99 },
+  { prefix: 'URU', min: 1,  max: 99 },
+  { prefix: 'FRA', min: 1,  max: 99 },
+  { prefix: 'SEN', min: 1,  max: 99 },
+  { prefix: 'IRQ', min: 1,  max: 99 },
+  { prefix: 'NOR', min: 1,  max: 99 },
+  { prefix: 'ARG', min: 1,  max: 99 },
+  { prefix: 'ALG', min: 1,  max: 99 },
+  { prefix: 'AUT', min: 1,  max: 99 },
+  { prefix: 'JOR', min: 1,  max: 99 },
+  { prefix: 'POR', min: 1,  max: 99 },
+  { prefix: 'COD', min: 1,  max: 99 },
+  { prefix: 'UZB', min: 1,  max: 99 },
+  { prefix: 'COL', min: 1,  max: 99 },
+  { prefix: 'ENG', min: 1,  max: 99 },
+  { prefix: 'CRO', min: 1,  max: 99 },
+  { prefix: 'GHA', min: 1,  max: 99 },
+  { prefix: 'PAN', min: 1,  max: 99 },
+  { prefix: 'FWC', min: 9,  max: 19 }, // FWC9-19: appear after Panama at end of album
 ]
 
 function getSortIndex2026(number: string): number {
@@ -73,9 +120,13 @@ function getSortIndex2026(number: string): number {
   if (!match) return 99999
   const prefix = match[1]
   const num = parseInt(match[2])
-  const idx = SECTIONS_2026.indexOf(prefix)
-  if (idx === -1) return 99999
-  return idx * 100 + num
+  for (let i = 0; i < SECTIONS_2026.length; i++) {
+    const s = SECTIONS_2026[i]
+    if (s.prefix === prefix && num >= s.min && num <= s.max) {
+      return i * 100 + num
+    }
+  }
+  return 99999
 }
 
 // ─── Generic sort ─────────────────────────────────────────────────────────────

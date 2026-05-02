@@ -6,11 +6,9 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { StickerChip } from '../components/ui/StickerChip'
-import type { StickerWithOwned, StickerCategory, TeamBreakdown } from '../types'
+import type { StickerWithOwned } from '../types'
 import { teamFlag } from '../lib/flags'
 import { CATEGORY_LABEL } from '../lib/categories'
-
-const SPECIAL_CATEGORIES: StickerCategory[] = ['special', 'stadium', 'gold', 'badge', 'team', 'other']
 
 export const AlbumDetailView: React.FC = () => {
   const { albumId } = useParams<{ albumId: string }>()
@@ -34,22 +32,25 @@ export const AlbumDetailView: React.FC = () => {
   const total = album?.total_stickers ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((owned / total) * 100)) : 0
 
-  // Team sections — use Map insertion order (preserves album order for numbered albums)
-  const teamBreakdowns: TeamBreakdown[] = useMemo(() => {
-    const map = new Map<string, StickerWithOwned[]>()
+  // Build sections in album order: each contiguous run of same team/category becomes one section
+  const sections = useMemo(() => {
+    const result: Array<{ key: string; title: string; flag?: string; stickers: StickerWithOwned[] }> = []
+    let prevKey = ''
     for (const s of enriched) {
-      if (s.team) {
-        const arr = map.get(s.team) ?? []
-        arr.push(s)
-        map.set(s.team, arr)
+      const key = s.team ? `team:${s.team}` : `cat:${s.category}`
+      if (key === prevKey) {
+        result[result.length - 1].stickers.push(s)
+      } else {
+        result.push({
+          key: `${key}:${result.length}`,
+          title: s.team ?? CATEGORY_LABEL[s.category],
+          flag: s.team ? teamFlag(s.team) : undefined,
+          stickers: [s],
+        })
+        prevKey = key
       }
     }
-    return Array.from(map.entries()).map(([team, ss]) => ({
-      team,
-      stickers: ss,
-      owned: ss.filter(s => s.owned).length,
-      total: ss.length,
-    }))
+    return result
   }, [enriched])
 
   const handleToggle = useCallback(
@@ -152,35 +153,20 @@ export const AlbumDetailView: React.FC = () => {
         </div>
       )}
 
-      {/* Non-team sticker sections */}
-      {SPECIAL_CATEGORIES.map(cat => {
-        const catStickers = enriched.filter(s => !s.team && s.category === cat)
-        if (catStickers.length === 0) return null
-        const catOwned = catStickers.filter(s => s.owned).length
+      {sections.map(section => {
+        const ownedCount = section.stickers.filter(s => s.owned).length
         return (
           <StickerSection
-            key={cat}
-            title={CATEGORY_LABEL[cat]}
-            subtitle={`${catOwned}/${catStickers.length}`}
-            stickers={catStickers}
+            key={section.key}
+            title={section.title}
+            flag={section.flag}
+            subtitle={`${ownedCount}/${section.stickers.length}`}
+            stickers={section.stickers}
             onToggle={handleToggle}
             readOnly={!user}
           />
         )
       })}
-
-      {/* Team sections */}
-      {teamBreakdowns.map(tb => (
-        <StickerSection
-          key={tb.team}
-          title={tb.team}
-          flag={teamFlag(tb.team)}
-          subtitle={`${tb.owned}/${tb.total}`}
-          stickers={tb.stickers}
-          onToggle={handleToggle}
-          readOnly={!user}
-        />
-      ))}
 
       {!user && (
         <div style={{ padding: 16, textAlign: 'center', color: '#64748b', fontSize: 13 }}>
