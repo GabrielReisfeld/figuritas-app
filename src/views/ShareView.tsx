@@ -6,7 +6,7 @@ import { useCollectionStore } from '../store/collectionStore'
 import { useAuthStore } from '../store/authStore'
 import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned } from '../types'
-import { CODE_FLAGS } from '../lib/flags'
+import { CODE_FLAGS, teamFlag } from '../lib/flags'
 
 interface CountryGroup { country: string; icon: string; nums: string[] }
 
@@ -22,6 +22,20 @@ function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): Cou
   return Array.from(map.entries()).map(([country, nums]) => ({
     country,
     icon: CODE_FLAGS[country] ?? '🌍',
+    nums,
+  }))
+}
+
+function groupByTeam(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
+  const map = new Map<string, string[]>()
+  for (const s of stickers) {
+    if (!s.team) continue
+    if (!map.has(s.team)) map.set(s.team, [])
+    map.get(s.team)!.push(s.number + (showDupCount && s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''))
+  }
+  return Array.from(map.entries()).map(([team, nums]) => ({
+    country: team,
+    icon: teamFlag(team) || '🌍',
     nums,
   }))
 }
@@ -61,6 +75,8 @@ export const ShareView: React.FC = () => {
   const dupList = useMemo(() => enriched.filter(s => s.owned && s.duplicateCount > 0), [enriched])
 
   const hasCountryCodes = useMemo(() => enriched.some(s => /^[A-Z]/.test(s.number)), [enriched])
+  const hasTeamData = useMemo(() => enriched.some(s => !!s.team), [enriched])
+  const hasCountryView = hasCountryCodes || hasTeamData
 
   const missingMessage = useMemo(() => {
     if (!album || missingList.length === 0) return ''
@@ -73,15 +89,15 @@ export const ShareView: React.FC = () => {
     return `Tengo las siguientes figuritas repetidas del Álbum del Mundial ${album.year}:\n${parts.join(', ')}`
   }, [album, dupList])
 
-  const missingGroups = useMemo(
-    () => hasCountryCodes ? groupByCountry(missingList) : [],
-    [hasCountryCodes, missingList]
-  )
+  const missingGroups = useMemo(() => {
+    if (!hasCountryView) return []
+    return hasCountryCodes ? groupByCountry(missingList) : groupByTeam(missingList)
+  }, [hasCountryView, hasCountryCodes, missingList])
 
-  const dupGroups = useMemo(
-    () => hasCountryCodes ? groupByCountry(dupList, true) : [],
-    [hasCountryCodes, dupList]
-  )
+  const dupGroups = useMemo(() => {
+    if (!hasCountryView) return []
+    return hasCountryCodes ? groupByCountry(dupList, true) : groupByTeam(dupList, true)
+  }, [hasCountryView, hasCountryCodes, dupList])
 
   const missingCountryMsg = useMemo(
     () => album && missingGroups.length > 0 ? buildCountryMessage(album.year, 'faltantes', missingGroups) : '',
@@ -147,7 +163,7 @@ export const ShareView: React.FC = () => {
             label="Compartir faltantes"
             message={missingMessage}
             countryMessage={missingCountryMsg}
-            countryGroups={hasCountryCodes ? missingGroups : undefined}
+            countryGroups={hasCountryView ? missingGroups : undefined}
             onCopy={copyText}
             onShare={shareNative}
             copied={copied}
@@ -159,7 +175,7 @@ export const ShareView: React.FC = () => {
             label="Compartir repetidas"
             message={dupMessage}
             countryMessage={dupCountryMsg}
-            countryGroups={hasCountryCodes ? dupGroups : undefined}
+            countryGroups={hasCountryView ? dupGroups : undefined}
             onCopy={copyText}
             onShare={shareNative}
             copied={copied}
