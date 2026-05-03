@@ -10,34 +10,55 @@ import { CODE_FLAGS, teamFlag } from '../lib/flags'
 
 interface CountryGroup { country: string; icon: string; nums: string[] }
 
-function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
-  const map = new Map<string, string[]>()
-  for (const s of stickers) {
-    const code = s.number.match(/^[A-Z]+/)?.[0]
-    if (!code) continue
-    if (!map.has(code)) map.set(code, [])
-    const num = s.number.replace(/^[A-Z]+/, '')
-    map.get(code)!.push(num + (showDupCount && s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''))
-  }
-  return Array.from(map.entries()).map(([country, nums]) => ({
-    country,
-    icon: CODE_FLAGS[country] ?? '🌍',
-    nums,
-  }))
+const CATEGORY_META: Record<string, { label: string; icon: string }> = {
+  special: { label: 'Especiales', icon: '⭐' },
+  stadium: { label: 'Estadios',   icon: '🏟️' },
+  gold:    { label: 'Doradas',    icon: '✨' },
+  badge:   { label: 'Escudos',    icon: '🛡️' },
+  team:    { label: 'Equipos',    icon: '👕' },
+  other:   { label: 'Otros',      icon: '🎴' },
 }
 
-function groupByTeam(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
-  const map = new Map<string, string[]>()
+function addToMap(map: Map<string, { icon: string; nums: string[] }>, key: string, icon: string, num: string) {
+  if (!map.has(key)) map.set(key, { icon, nums: [] })
+  map.get(key)!.nums.push(num)
+}
+
+function toGroups(map: Map<string, { icon: string; nums: string[] }>): CountryGroup[] {
+  return Array.from(map.entries()).map(([country, { icon, nums }]) => ({ country, icon, nums }))
+}
+
+function dupStr(s: StickerWithOwned, showDupCount: boolean) {
+  return showDupCount && s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''
+}
+
+// For 2022/2026: group by letter prefix in number; fallback to category
+function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
+  const map = new Map<string, { icon: string; nums: string[] }>()
   for (const s of stickers) {
-    if (!s.team) continue
-    if (!map.has(s.team)) map.set(s.team, [])
-    map.get(s.team)!.push(s.number + (showDupCount && s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''))
+    const code = s.number.match(/^[A-Z]+/)?.[0]
+    if (code) {
+      addToMap(map, code, CODE_FLAGS[code] ?? '🌍', s.number.replace(/^[A-Z]+/, '') + dupStr(s, showDupCount))
+    } else {
+      const m = CATEGORY_META[s.category] ?? { label: 'Otros', icon: '🎴' }
+      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount))
+    }
   }
-  return Array.from(map.entries()).map(([team, nums]) => ({
-    country: team,
-    icon: teamFlag(team) || '🌍',
-    nums,
-  }))
+  return toGroups(map)
+}
+
+// For 2002–2018: group by team field; fallback to category
+function groupByTeam(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
+  const map = new Map<string, { icon: string; nums: string[] }>()
+  for (const s of stickers) {
+    if (s.team) {
+      addToMap(map, s.team, teamFlag(s.team) || '🌍', s.number + dupStr(s, showDupCount))
+    } else {
+      const m = CATEGORY_META[s.category] ?? { label: 'Otros', icon: '🎴' }
+      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount))
+    }
+  }
+  return toGroups(map)
 }
 
 function buildCountryMessage(albumYear: number | string, type: 'faltantes' | 'repetidas', groups: CountryGroup[]): string {
