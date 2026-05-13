@@ -8,6 +8,7 @@ export type StickerCategory =
   | 'special'
   | 'gold'
   | 'other'
+  | 'coca-cola'
 
 export interface Album {
   id: string

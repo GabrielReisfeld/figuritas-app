@@ -11,7 +11,7 @@ insert into albums (id, year, name, total_stickers) values
   ('a2014000-0000-0000-0000-000000000000', 2014, 'Brazil',         640),
   ('a2018000-0000-0000-0000-000000000000', 2018, 'Russia',         670),
   ('a2022000-0000-0000-0000-000000000000', 2022, 'Qatar',          636),
-  ('a2026000-0000-0000-0000-000000000000', 2026, 'USA/CAN/MEX',    980)
+  ('a2026000-0000-0000-0000-000000000000', 2026, 'USA/CAN/MEX',    994)
 on conflict (year) do nothing;
 
 -- Remove any previously seeded invented sticker data
@@ -4037,7 +4037,7 @@ on conflict (album_id, number) do nothing;
 -- 2026 USA/CAN/MEX (980 stickers)
 -- ═════════════════════════════════════════════════════════════════════════════
 
-update albums set total_stickers = 980 where year = 2026;
+update albums set total_stickers = 994 where year = 2026;
 
 delete from stickers where album_id = 'a2026000-0000-0000-0000-000000000000';
 
@@ -5021,4 +5021,19 @@ insert into stickers (album_id, number, label, team, category) values
 ('a2026000-0000-0000-0000-000000000000','FWC16','Brazil 2002',null,'special'),
 ('a2026000-0000-0000-0000-000000000000','FWC17','Italy 2006',null,'special'),
 ('a2026000-0000-0000-0000-000000000000','FWC18','Germany 2014',null,'special'),
-('a2026000-0000-0000-0000-000000000000','FWC19','Argentina 2022',null,'special');
+('a2026000-0000-0000-0000-000000000000','FWC19','Argentina 2022',null,'special'),
+-- Coca Cola / Latin America (CC1–CC14)
+('a2026000-0000-0000-0000-000000000000','CC1','Lamine Yamal',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC2','Joshua Kimmich',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC3','Harry Kane',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC4','Santiago Giménez',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC5','Josko Gvardiol',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC6','Federico Valverde',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC7','Jefferson Lerma',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC8','Enner Valencia',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC9','Gabriel Magalhães',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC10','Virgil van Dijk',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC11','Alphonso Davies',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC12','Emiliano Martinez',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC13','Raúl Jiménez',null,'coca-cola'),
+('a2026000-0000-0000-0000-000000000000','CC14','Lautaro Martínez',null,'coca-cola');

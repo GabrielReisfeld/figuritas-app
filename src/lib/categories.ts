@@ -8,4 +8,5 @@ export const CATEGORY_LABEL: Record<StickerCategory, string> = {
   team:    'Fotos de equipo',
   player:  'Jugadores',
   other:   'Otros',
+  'coca-cola': '🥤 Coca-Cola',
 }
