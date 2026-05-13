@@ -11,12 +11,13 @@ import { CODE_FLAGS, teamFlag } from '../lib/flags'
 interface CountryGroup { country: string; icon: string; nums: string[] }
 
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
-  special: { label: 'Especiales', icon: '⭐' },
-  stadium: { label: 'Estadios',   icon: '🏟️' },
-  gold:    { label: 'Doradas',    icon: '✨' },
-  badge:   { label: 'Escudos',    icon: '🛡️' },
-  team:    { label: 'Equipos',    icon: '👕' },
-  other:   { label: 'Otros',      icon: '🎴' },
+  special:      { label: 'Especiales', icon: '⭐' },
+  stadium:      { label: 'Estadios',   icon: '🏟️' },
+  gold:         { label: 'Doradas',    icon: '✨' },
+  badge:        { label: 'Escudos',    icon: '🛡️' },
+  team:         { label: 'Equipos',    icon: '👕' },
+  other:        { label: 'Otros',      icon: '🎴' },
+  'coca-cola':  { label: 'Coca-Cola',  icon: '🥤' },
 }
 
 function addToMap(map: Map<string, { icon: string; nums: string[] }>, key: string, icon: string, num: string) {
@@ -37,8 +38,8 @@ function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): Cou
   const map = new Map<string, { icon: string; nums: string[] }>()
   for (const s of stickers) {
     const code = s.number.match(/^[A-Z]+/)?.[0]
-    if (code) {
-      addToMap(map, code, CODE_FLAGS[code] ?? '🌍', s.number.replace(/^[A-Z]+/, '') + dupStr(s, showDupCount))
+    if (code && CODE_FLAGS[code]) {
+      addToMap(map, code, CODE_FLAGS[code], s.number.replace(/^[A-Z]+/, '') + dupStr(s, showDupCount))
     } else {
       const m = CATEGORY_META[s.category] ?? { label: 'Otros', icon: '🎴' }
       addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount))
