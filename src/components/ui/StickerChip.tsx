@@ -2,13 +2,14 @@ import React, { memo } from 'react'
 import type { StickerWithOwned, StickerCategory } from '../../types'
 
 const CATEGORY_COLOR: Record<StickerCategory, string> = {
-  player:  '#4ade80',
-  badge:   '#fbbf24',
-  team:    '#60a5fa',
-  stadium: '#a78bfa',
-  special: '#22d3ee',
-  gold:    '#fb923c',
-  other:   '#94a3b8',
+  player:      '#4ade80',
+  badge:       '#fbbf24',
+  team:        '#60a5fa',
+  stadium:     '#a78bfa',
+  special:     '#22d3ee',
+  gold:        '#fb923c',
+  other:       '#94a3b8',
+  'coca-cola': '#ef4444',
 }
 
 interface Props {

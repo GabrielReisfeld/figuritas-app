@@ -93,7 +93,7 @@ export interface Database {
     Views: Record<string, never>
     Functions: Record<string, never>
     Enums: {
-      sticker_category: 'team' | 'player' | 'badge' | 'stadium' | 'special' | 'gold' | 'other'
+      sticker_category: 'team' | 'player' | 'badge' | 'stadium' | 'special' | 'gold' | 'other' | 'coca-cola'
     }
   }
 }

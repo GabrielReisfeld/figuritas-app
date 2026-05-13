@@ -2,13 +2,14 @@ import React from 'react'
 import type { StickerCategory } from '../../types'
 
 const COLORS: Record<StickerCategory, string> = {
-  team: '#60a5fa',
-  player: '#a78bfa',
-  badge: '#fbbf24',
-  stadium: '#34d399',
-  special: '#f472b6',
-  gold: '#fcd34d',
-  other: '#94a3b8',
+  team:        '#60a5fa',
+  player:      '#a78bfa',
+  badge:       '#fbbf24',
+  stadium:     '#34d399',
+  special:     '#f472b6',
+  gold:        '#fcd34d',
+  other:       '#94a3b8',
+  'coca-cola': '#ef4444',
 }
 
 interface Props {
