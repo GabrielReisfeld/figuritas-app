@@ -112,6 +112,7 @@ const SECTIONS_2026: Array<{ prefix: string; min: number; max: number }> = [
   { prefix: 'GHA', min: 1,  max: 99 },
   { prefix: 'PAN', min: 1,  max: 99 },
   { prefix: 'FWC', min: 9,  max: 19 }, // FWC9-19: appear after Panama at end of album
+  { prefix: 'CC',  min: 1,  max: 99 }, // Coca-Cola / Latin America
 ]
 
 function getSortIndex2026(number: string): number {
