@@ -1,11 +1,10 @@
 -- Agregar figuritas Coca-Cola / Latin America al álbum 2026
 -- Seguro para correr sin tocar la colección existente
-
--- Agregar valor al enum (idempotente)
-do $$ begin
-  alter type sticker_category add value if not exists 'coca-cola';
-exception when others then null;
-end $$;
+--
+-- ⚠️  PASO 1: correr esto primero (solo esta línea) y hacer Run
+--     alter type sticker_category add value if not exists 'coca-cola';
+--
+-- ⚠️  PASO 2: después de que el PASO 1 commitee, correr el resto del script
 
 update albums set total_stickers = 994 where year = 2026;
 
