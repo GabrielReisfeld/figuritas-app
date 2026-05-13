@@ -10,7 +10,7 @@ create extension if not exists "pgcrypto";
 -- Enum
 do $$ begin
   create type sticker_category as enum (
-    'team', 'player', 'badge', 'stadium', 'special', 'gold', 'other'
+    'team', 'player', 'badge', 'stadium', 'special', 'gold', 'other', 'coca-cola'
   );
 exception
   when duplicate_object then null;
