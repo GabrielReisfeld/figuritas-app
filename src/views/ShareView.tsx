@@ -224,7 +224,9 @@ interface ShareCardProps {
 const ShareCard: React.FC<ShareCardProps> = ({
   label, message, countryMessage, countryGroups, onCopy, onShare, copied,
 }) => {
-  const [tab, setTab] = useState<'list' | 'country'>('list')
+  const [tab, setTab] = useState<'list' | 'country'>(
+    () => (countryGroups && countryGroups.length > 0) ? 'country' : 'list'
+  )
   const hasCountry = countryGroups && countryGroups.length > 0
   const activeMessage = tab === 'country' && countryMessage ? countryMessage : message
 
