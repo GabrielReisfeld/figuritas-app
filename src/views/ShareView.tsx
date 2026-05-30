@@ -77,6 +77,13 @@ export const ShareView: React.FC = () => {
   const { loadOwnedForAlbum, ownedByAlbum, duplicatesByAlbum, enrichStickers } = useCollectionStore()
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
   const [copied, setCopied] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 768)
+
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
   const effectiveAlbumId = selectedAlbumId || albums[albums.length - 1]?.id || ''
   const album = albums.find(a => a.id === effectiveAlbumId)
@@ -178,7 +185,7 @@ export const ShareView: React.FC = () => {
         {dupList.length > 0 && ` · ${dupList.reduce((s, x) => s + x.duplicateCount, 0)} repetidas`}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
+      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 10, marginTop: 20, alignItems: 'flex-start' }}>
 
         {missingMessage && (
           <ShareCard
@@ -189,6 +196,7 @@ export const ShareView: React.FC = () => {
             onCopy={copyText}
             onShare={shareNative}
             copied={copied}
+            isDesktop={isDesktop}
           />
         )}
 
@@ -201,6 +209,7 @@ export const ShareView: React.FC = () => {
             onCopy={copyText}
             onShare={shareNative}
             copied={copied}
+            isDesktop={isDesktop}
           />
         )}
 
@@ -219,19 +228,23 @@ interface ShareCardProps {
   onCopy: (text: string) => void
   onShare: (text: string) => void
   copied: boolean
+  isDesktop?: boolean
 }
 
 const ShareCard: React.FC<ShareCardProps> = ({
-  label, message, countryMessage, countryGroups, onCopy, onShare, copied,
+  label, message, countryMessage, countryGroups, onCopy, onShare, copied, isDesktop,
 }) => {
   const [tab, setTab] = useState<'list' | 'country'>(
     () => (countryGroups && countryGroups.length > 0) ? 'country' : 'list'
   )
   const hasCountry = countryGroups && countryGroups.length > 0
   const activeMessage = tab === 'country' && countryMessage ? countryMessage : message
+  const dynPreviewStyle: React.CSSProperties = isDesktop
+    ? { ...previewStyle, maxHeight: 'none', overflow: 'visible' }
+    : previewStyle
 
   return (
-    <div style={cardStyle}>
+    <div style={{ ...cardStyle, ...(isDesktop ? { flex: 1 } : {}) }}>
       <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, fontWeight: 600 }}>{label}</p>
 
       {hasCountry && (
@@ -242,9 +255,9 @@ const ShareCard: React.FC<ShareCardProps> = ({
       )}
 
       {tab === 'list' || !hasCountry ? (
-        <pre style={previewStyle}>{message}</pre>
+        <pre style={dynPreviewStyle}>{message}</pre>
       ) : (
-        <div style={{ ...previewStyle, whiteSpace: 'normal' }}>
+        <div style={{ ...dynPreviewStyle, whiteSpace: 'normal' }}>
           {countryGroups!.map(g => (
             <div key={g.country} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'flex-start' }}>
               <span style={{ fontSize: 17, lineHeight: '1.3', flexShrink: 0 }}>{g.icon}</span>
