@@ -13,7 +13,7 @@ const CATEGORIES: StickerCategory[] = ['player', 'badge', 'team', 'stadium', 'sp
 export const MissingView: React.FC = () => {
   const { albums } = useAlbums()
   const { user } = useAuthStore()
-  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum } = useCollectionStore()
+  const { loadOwnedForAlbum, enrichStickers, ownedByAlbum, toggleSticker } = useCollectionStore()
 
   const [selectedAlbumId, setSelectedAlbumId] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<StickerCategory | ''>('')
@@ -99,6 +99,23 @@ export const MissingView: React.FC = () => {
               {s.team && <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>{teamFlag(s.team)} {s.team}</div>}
             </div>
             <span style={{ fontSize: 11, color: '#64748b' }}>{CATEGORY_LABEL[s.category]}</span>
+            <button
+              onClick={() => toggleSticker(user!.id, effectiveAlbumId, s)}
+              style={{
+                background: 'rgba(74,222,128,0.12)',
+                border: '1px solid rgba(74,222,128,0.3)',
+                borderRadius: 8,
+                color: '#4ade80',
+                fontSize: 18,
+                lineHeight: 1,
+                padding: '4px 10px',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+              title="La conseguí"
+            >
+              ✓
+            </button>
           </div>
         ))}
         {missing.length === 0 && (
