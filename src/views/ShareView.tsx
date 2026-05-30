@@ -8,7 +8,19 @@ import { StickerChip } from '../components/ui/StickerChip'
 import type { StickerWithOwned } from '../types'
 import { CODE_FLAGS, teamFlag } from '../lib/flags'
 
-interface CountryGroup { country: string; icon: string; nums: string[] }
+interface CountryGroupItem { label: string; category: string }
+interface CountryGroup { country: string; icon: string; items: CountryGroupItem[] }
+
+const CATEGORY_COLOR: Record<string, string> = {
+  player:      '#4ade80',
+  badge:       '#fbbf24',
+  team:        '#60a5fa',
+  stadium:     '#a78bfa',
+  special:     '#22d3ee',
+  gold:        '#fb923c',
+  other:       '#94a3b8',
+  'coca-cola': '#ef4444',
+}
 
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   special:      { label: 'Especiales', icon: '⭐' },
@@ -20,13 +32,16 @@ const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   'coca-cola':  { label: 'Coca-Cola',  icon: '🥤' },
 }
 
-function addToMap(map: Map<string, { icon: string; nums: string[] }>, key: string, icon: string, num: string) {
-  if (!map.has(key)) map.set(key, { icon, nums: [] })
-  map.get(key)!.nums.push(num)
+function addToMap(
+  map: Map<string, { icon: string; items: CountryGroupItem[] }>,
+  key: string, icon: string, label: string, category: string,
+) {
+  if (!map.has(key)) map.set(key, { icon, items: [] })
+  map.get(key)!.items.push({ label, category })
 }
 
-function toGroups(map: Map<string, { icon: string; nums: string[] }>): CountryGroup[] {
-  return Array.from(map.entries()).map(([country, { icon, nums }]) => ({ country, icon, nums }))
+function toGroups(map: Map<string, { icon: string; items: CountryGroupItem[] }>): CountryGroup[] {
+  return Array.from(map.entries()).map(([country, { icon, items }]) => ({ country, icon, items }))
 }
 
 function dupStr(s: StickerWithOwned, showDupCount: boolean) {
@@ -35,14 +50,14 @@ function dupStr(s: StickerWithOwned, showDupCount: boolean) {
 
 // For 2022/2026: group by letter prefix in number; fallback to category
 function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
-  const map = new Map<string, { icon: string; nums: string[] }>()
+  const map = new Map<string, { icon: string; items: CountryGroupItem[] }>()
   for (const s of stickers) {
     const code = s.number.match(/^[A-Z]+/)?.[0]
     if (code && CODE_FLAGS[code]) {
-      addToMap(map, code, CODE_FLAGS[code], s.number.replace(/^[A-Z]+/, '') + dupStr(s, showDupCount))
+      addToMap(map, code, CODE_FLAGS[code], s.number.replace(/^[A-Z]+/, '') + dupStr(s, showDupCount), s.category)
     } else {
       const m = CATEGORY_META[s.category] ?? { label: 'Otros', icon: '🎴' }
-      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount))
+      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount), s.category)
     }
   }
   return toGroups(map)
@@ -50,13 +65,13 @@ function groupByCountry(stickers: StickerWithOwned[], showDupCount = false): Cou
 
 // For 2002–2018: group by team field; fallback to category
 function groupByTeam(stickers: StickerWithOwned[], showDupCount = false): CountryGroup[] {
-  const map = new Map<string, { icon: string; nums: string[] }>()
+  const map = new Map<string, { icon: string; items: CountryGroupItem[] }>()
   for (const s of stickers) {
     if (s.team) {
-      addToMap(map, s.team, teamFlag(s.team) || '🌍', s.number + dupStr(s, showDupCount))
+      addToMap(map, s.team, teamFlag(s.team) || '🌍', s.number + dupStr(s, showDupCount), s.category)
     } else {
       const m = CATEGORY_META[s.category] ?? { label: 'Otros', icon: '🎴' }
-      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount))
+      addToMap(map, m.label, m.icon, s.number + dupStr(s, showDupCount), s.category)
     }
   }
   return toGroups(map)
@@ -66,7 +81,7 @@ function buildCountryMessage(albumYear: number | string, type: 'faltantes' | 're
   const header = type === 'faltantes'
     ? `Me faltan las siguientes figuritas del Álbum del Mundial ${albumYear}:`
     : `Tengo las siguientes figuritas repetidas del Álbum del Mundial ${albumYear}:`
-  return `${header}\n${groups.map(g => `${g.icon} ${g.country}: ${g.nums.join(', ')}`).join('\n')}`
+  return `${header}\n${groups.map(g => `${g.icon} ${g.country}: ${g.items.map(i => i.label).join(', ')}`).join('\n')}`
 }
 
 // ─── Share view ───────────────────────────────────────────────────────────────
@@ -190,6 +205,8 @@ export const ShareView: React.FC = () => {
         {missingMessage && (
           <ShareCard
             label="Compartir faltantes"
+            labelColor="#f87171"
+            stickers={missingList}
             message={missingMessage}
             countryMessage={missingCountryMsg}
             countryGroups={hasCountryView ? missingGroups : undefined}
@@ -203,6 +220,8 @@ export const ShareView: React.FC = () => {
         {dupMessage && (
           <ShareCard
             label="Compartir repetidas"
+            labelColor="#f59e0b"
+            stickers={dupList}
             message={dupMessage}
             countryMessage={dupCountryMsg}
             countryGroups={hasCountryView ? dupGroups : undefined}
@@ -222,6 +241,8 @@ export const ShareView: React.FC = () => {
 
 interface ShareCardProps {
   label: string
+  labelColor: string
+  stickers: StickerWithOwned[]
   message: string
   countryMessage?: string
   countryGroups?: CountryGroup[]
@@ -232,7 +253,7 @@ interface ShareCardProps {
 }
 
 const ShareCard: React.FC<ShareCardProps> = ({
-  label, message, countryMessage, countryGroups, onCopy, onShare, copied, isDesktop,
+  label, labelColor, stickers, message, countryMessage, countryGroups, onCopy, onShare, copied, isDesktop,
 }) => {
   const [tab, setTab] = useState<'list' | 'country'>(
     () => (countryGroups && countryGroups.length > 0) ? 'country' : 'list'
@@ -245,7 +266,7 @@ const ShareCard: React.FC<ShareCardProps> = ({
 
   return (
     <div style={{ ...cardStyle, ...(isDesktop ? { flex: 1 } : {}) }}>
-      <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8, fontWeight: 600 }}>{label}</p>
+      <p style={{ fontSize: 15, color: labelColor, marginBottom: 10, fontWeight: 700 }}>{label}</p>
 
       {hasCountry && (
         <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
@@ -255,15 +276,34 @@ const ShareCard: React.FC<ShareCardProps> = ({
       )}
 
       {tab === 'list' || !hasCountry ? (
-        <pre style={dynPreviewStyle}>{message}</pre>
+        <div style={dynPreviewStyle}>
+          <div style={{ color: '#64748b', fontSize: 11, marginBottom: 6 }}>{message.split('\n')[0]}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1px 0', lineHeight: '1.9' }}>
+            {stickers.map((s, i) => (
+              <span key={s.id}>
+                <span style={{ color: CATEGORY_COLOR[s.category] ?? '#94a3b8', fontSize: 11, fontWeight: 600 }}>
+                  {s.number}{s.duplicateCount > 1 ? ` (x${s.duplicateCount})` : ''}
+                </span>
+                {i < stickers.length - 1 && <span style={{ color: '#475569', fontSize: 11 }}>, </span>}
+              </span>
+            ))}
+          </div>
+        </div>
       ) : (
         <div style={{ ...dynPreviewStyle, whiteSpace: 'normal' }}>
           {countryGroups!.map(g => (
             <div key={g.country} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'flex-start' }}>
               <span style={{ fontSize: 17, lineHeight: '1.3', flexShrink: 0 }}>{g.icon}</span>
-              <div style={{ fontSize: 12, lineHeight: '1.5' }}>
+              <div style={{ fontSize: 12, lineHeight: '1.6' }}>
                 <span style={{ fontWeight: 700, color: '#94a3b8' }}>{g.country} </span>
-                <span style={{ color: '#cbd5e1' }}>{g.nums.join(', ')}</span>
+                {g.items.map((item, i) => (
+                  <span key={i}>
+                    <span style={{ color: CATEGORY_COLOR[item.category] ?? '#94a3b8', fontWeight: 600 }}>
+                      {item.label}
+                    </span>
+                    {i < g.items.length - 1 && <span style={{ color: '#475569' }}>, </span>}
+                  </span>
+                ))}
               </div>
             </div>
           ))}
