@@ -200,7 +200,7 @@ export const ShareView: React.FC = () => {
         {dupList.length > 0 && ` · ${dupList.reduce((s, x) => s + x.duplicateCount, 0)} repetidas`}
       </div>
 
-      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 10, marginTop: 20, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: isDesktop ? 'row' : 'column', gap: 10, marginTop: 20, alignItems: isDesktop ? 'flex-start' : 'stretch' }}>
 
         {missingMessage && (
           <ShareCard
